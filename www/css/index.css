@@ -1,0 +1,586 @@
+:root{
+    --branco: #e3e1e1;
+    --verde: #4CAF50;
+    --verde-claro: #A5D6A7;
+    --branquin: #ffff;
+    --branco2: #f3f2f2;
+    --sombra: rgba(0, 0, 0, 0.1);
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Roboto', sans-serif;
+  background-color: var(--branco2);
+  color: var(--verde);
+}
+
+/* Topo da página */
+.top-nav {
+  text-align: center;
+  padding: 15px;
+  background: linear-gradient(135deg, var(--verde), var(--verde-claro));
+  box-shadow: 0 4px 8px var(--sombra);
+  border-radius: 0 0 20px 20px;
+  position: relative;
+}
+
+.title-logo {
+  color: white;
+  font-size: 24px;
+  font-weight: bold;
+  margin: 0;
+}
+
+.subtitle {
+  color: white;
+  font-size: 14px;
+  margin: 5px 0 0 0;
+  opacity: 0.9;
+}
+
+.user-info {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.user-info span {
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.logout-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  border-radius: 50%;
+  width: 35px;
+  height: 35px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.logout-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.1);
+}
+
+.logout-btn i {
+  color: white;
+  font-size: 18px;
+}
+
+/* Estilo da Tab Bar */
+.toolbar {
+  height: 80px;
+  border-radius: 20px 20px 0 0;
+}
+
+.toolbar-inner {
+  background-color: var(--branquin);
+  border-top: 1px solid var(--branco);
+  display: flex;
+  justify-content: space-around;
+  box-shadow: 0 -4px 8px var(--sombra);
+}
+
+.tab-link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--verde);
+  transition: transform 0.2s ease-in-out, color 0.3s;
+  font-size: 16px;
+}
+
+.tab-link i {
+  font-size: 28px;
+}
+
+.toolbar-inner .link {
+  flex: 1;
+  height: 80px;
+  line-height: 25px;
+  font-weight: bold;
+  color: var(--verde);
+}
+
+.toolbar-inner .link:not(.active) {
+  color: var(--branco);
+  font-weight: normal;
+}
+
+.tab-link:hover,
+.tab-link:focus {
+  transform: scale(1.1);
+  color: var(--verde-claro);
+}
+
+/* Seção de boas-vindas */
+.welcome-section {
+  padding: 20px;
+}
+
+.welcome-card {
+  background: var(--branquin);
+  border-radius: 15px;
+  padding: 30px;
+  text-align: center;
+  box-shadow: 0 4px 12px var(--sombra);
+  margin-bottom: 20px;
+}
+
+.welcome-card i {
+  font-size: 48px;
+  color: var(--verde);
+  margin-bottom: 15px;
+}
+
+.welcome-card h2 {
+  color: var(--verde);
+  margin: 0 0 10px 0;
+  font-size: 20px;
+}
+
+.welcome-card p {
+  color: #666;
+  margin: 0;
+  font-size: 14px;
+}
+
+/* Estatísticas rápidas */
+.quick-stats {
+  display: flex;
+  justify-content: space-around;
+  padding: 0 20px 20px;
+  gap: 10px;
+}
+
+.stat-item {
+  background: var(--branquin);
+  border-radius: 12px;
+  padding: 15px;
+  text-align: center;
+  flex: 1;
+  box-shadow: 0 2px 8px var(--sombra);
+}
+
+.stat-item i {
+  font-size: 24px;
+  color: var(--verde);
+  display: block;
+  margin-bottom: 5px;
+}
+
+.stat-item span {
+  display: block;
+  font-size: 20px;
+  font-weight: bold;
+  color: var(--verde);
+}
+
+.stat-item small {
+  color: #666;
+  font-size: 12px;
+}
+
+/* Seção do mapa */
+.map-section {
+  padding: 0 20px 20px;
+}
+
+.map-section h3 {
+  color: var(--verde);
+  font-size: 16px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.map-section h3 i {
+  font-size: 18px;
+}
+
+/* Formulários */
+form {
+  padding: 20px;
+  background-color: var(--branquin);
+  text-align: center;
+  border-radius: 15px;
+  box-shadow: 0 4px 8px var(--sombra);
+  margin: 20px auto;
+  max-width: 500px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--verde);
+  font-weight: bold;
+  font-size: 14px;
+}
+
+input[type="text"],
+input[type="number"],
+select,
+textarea {
+  width: 100%;
+  height: 45px;
+  background-color: var(--branco2);
+  border-radius: 10px;
+  padding: 10px;
+  border: none;
+  outline: none;
+  box-shadow: inset 2px 2px 5px var(--sombra);
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+select {
+  cursor: pointer;
+}
+
+textarea {
+  height: 80px;
+  resize: vertical;
+}
+
+::placeholder {
+  color: gray;
+}
+
+.ib {
+  position: absolute;
+  right: 7%;
+  top: 22px;
+  font-size: 30px;
+}
+
+.title-2 {
+  color: var(--verde);
+  margin-left: 20px;
+  font-weight: bold;
+}
+
+/* Botões */
+button {
+  background: linear-gradient(135deg, var(--verde), var(--verde-claro));
+  border: none;
+  padding: 12px 24px;
+  font-size: 16px;
+  color: white;
+  border-radius: 25px;
+  cursor: pointer;
+  transition: background 0.3s, transform 0.2s, box-shadow 0.3s;
+  box-shadow: 2px 2px 8px var(--sombra);
+}
+
+button:hover {
+  background: var(--verde);
+  transform: scale(1.05);
+  box-shadow: 4px 4px 12px var(--sombra);
+}
+
+.submit-btn {
+  width: 100%;
+  height: 50px;
+  font-size: 16px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+/* Filtros de busca */
+.filters {
+  display: flex;
+  gap: 10px;
+  padding: 0 20px 20px;
+  overflow-x: auto;
+}
+
+.filter-btn {
+  background: var(--branquin);
+  color: var(--verde);
+  border: 2px solid var(--verde);
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 12px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.filter-btn.active {
+  background: var(--verde);
+  color: white;
+}
+
+/* Resultados de busca */
+.search-results {
+  padding: 0 20px 20px;
+}
+
+.no-results {
+  text-align: center;
+  padding: 40px 20px;
+  color: #666;
+}
+
+.no-results i {
+  font-size: 48px;
+  color: var(--branco);
+  margin-bottom: 15px;
+  display: block;
+}
+
+/* Estatísticas */
+.stats-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 15px;
+  padding: 20px;
+}
+
+.stat-card {
+  background: var(--branquin);
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+  box-shadow: 0 2px 8px var(--sombra);
+}
+
+.stat-card i {
+  font-size: 32px;
+  color: var(--verde);
+  margin-bottom: 10px;
+  display: block;
+}
+
+.stat-card h3 {
+  color: var(--verde);
+  font-size: 14px;
+  margin: 0 0 10px 0;
+}
+
+.stat-card p {
+  font-size: 24px;
+  font-weight: bold;
+  color: var(--verde);
+  margin: 0;
+}
+
+.recent-items {
+  padding: 20px;
+}
+
+.recent-items h3 {
+  color: var(--verde);
+  margin-bottom: 15px;
+}
+
+.no-data {
+  text-align: center;
+  color: #666;
+  font-style: italic;
+}
+
+/* Mensagem de sucesso */
+.success-message {
+  background: var(--verde-claro);
+  color: var(--verde);
+  padding: 15px;
+  border-radius: 10px;
+  text-align: center;
+  margin: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.success-message i {
+  font-size: 24px;
+}
+
+/* Estilizando o mapa */
+#map {
+  width: 90%;
+  max-width: 600px;
+  height: 300px;
+  margin: 20px auto;
+  border-radius: 15px;
+  box-shadow: 0 4px 12px var(--sombra);
+}
+
+/* Resultados de busca */
+.search-result-item {
+  background: var(--branquin);
+  border-radius: 12px;
+  padding: 15px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  box-shadow: 0 2px 8px var(--sombra);
+}
+
+.result-icon {
+  background: var(--verde-claro);
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.result-icon i {
+  font-size: 24px;
+  color: var(--verde);
+}
+
+.result-info {
+  flex: 1;
+}
+
+.result-info h4 {
+  color: var(--verde);
+  margin: 0 0 5px 0;
+  font-size: 16px;
+}
+
+.result-info p {
+  color: #333;
+  margin: 0 0 3px 0;
+  font-size: 14px;
+}
+
+.result-info small {
+  color: #666;
+  font-size: 12px;
+}
+
+.result-date {
+  color: #999;
+  font-size: 12px;
+  text-align: right;
+}
+
+/* Itens recentes */
+.recent-item {
+  background: var(--branquin);
+  border-radius: 10px;
+  padding: 15px;
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 6px var(--sombra);
+}
+
+.item-info strong {
+  color: var(--verde);
+  display: block;
+  font-size: 14px;
+  margin-bottom: 3px;
+}
+
+.item-info span {
+  color: #333;
+  font-size: 13px;
+  display: block;
+}
+
+.item-info small {
+  color: #666;
+  font-size: 11px;
+}
+
+.item-date {
+  color: #999;
+  font-size: 12px;
+}
+
+/* Esconde o input de arquivo padrão */
+input[type="file"] {
+    display: none;
+  }
+  
+  /* Estilo do botão personalizado */
+  .custom-file-input {
+    display: inline-block;
+    background-color: var(--verde);
+    color: white;
+    padding: 12px 30px;
+    font-size: 16px;
+    border-radius: 50px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease-in-out;
+    text-align: center;
+    border: 2px solid transparent;
+    position: relative;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Hover para o botão personalizado */
+  .custom-file-input:hover {
+    background-color: var(--verde-claro);
+    transform: translateY(-3px);
+    box-shadow: 0px 8px 15px rgba(0, 0, 0, 0.2);
+  }
+  
+  /* Efeito de foco */
+  .custom-file-input:focus {
+    outline: none;
+    box-shadow: 0 0 0 4px rgba(76, 175, 80, 0.4);
+  }
+  
+  /* Efeito de animação no botão personalizado */
+  .custom-file-input::after {
+    content: "Escolher Imagem";
+    display: block;
+    font-size: 14px;
+    margin-top: 8px;
+    transition: opacity 0.3s ease;
+  }
+  
+  /* Estilo para mostrar nome do arquivo */
+  .file-name {
+    display: block;
+    margin-top: 10px;
+    font-size: 14px;
+    color: #666;
+  }
+  
+  /* Mostra o nome do arquivo quando selecionado */
+  input[type="file"]:valid + .custom-file-input + .file-name {
+    color: var(--verde);
+    font-weight: bold;
+  }
+  
+.page-content {
+  padding-bottom: max(120px, env(safe-area-inset-bottom));
+}
+
+.toolbar-bottom {
+  z-index: 1000;
+  pointer-events: auto;
+}
+  

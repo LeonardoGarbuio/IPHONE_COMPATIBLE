@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <!-- Meta viewport ajustado -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#d1d1d1">
+  <title>GreenTech - Reciclagem Sustentável</title>
+  <!-- Framework7 CSS -->
+  <link rel="stylesheet" href="/lib/framework7-bundle.min.css">
+  <!-- CSS Personalizado -->
+  <link rel="stylesheet" href="/css/index.css">
+  <!-- Ícones Material Design -->
+  <link rel="stylesheet" href="/css/materialdesignicons.min.css">
+  <style>
+    /* Container do Google Maps */
+    .map-center-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
+      margin-bottom: 24px;
+    }
+    #map {
+      height: 400px;
+      width: 100%;
+      max-width: 600px;
+      border-radius: 18px;
+      box-shadow: 0 4px 24px rgba(76, 175, 80, 0.10), 0 1.5px 4px rgba(0,0,0,0.08);
+      border: 2px solid #e0f2f1;
+      transition: box-shadow 0.3s;
+    }
+    #map:hover {
+      box-shadow: 0 8px 32px rgba(76, 175, 80, 0.18), 0 2px 8px rgba(0,0,0,0.12);
+    }
+    @media (max-width: 700px) {
+      #map {
+        max-width: 98vw;
+        height: 250px;
+      }
+    }
+    /* Ajuste de propriedades para elementos internos do Google Maps */
+    .gm-style-mot {
+      color: white;
+      font-family: Roboto, Arial, sans-serif;
+      font-size: 22px;
+      margin: 0;
+      position: relative;
+      top: 50%;
+      -webkit-transform: translateY(-50%);
+      -ms-transform: translateY(-50%);
+      transform: translateY(-50%);
+    }
+    .loader {
+      border: 4px solid #e0f2f1;
+      border-top: 4px solid #4caf50;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      animation: spin 1s linear infinite;
+      display: inline-block;
+      vertical-align: middle;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    #materiais-lista > div {
+      transition: box-shadow 0.2s;
+    }
+    #materiais-lista > div:hover {
+      box-shadow:0 8px 32px rgba(76,175,80,0.13),0 2px 8px rgba(0,0,0,0.12);
+    }
+    #catador-dashboard h3 {
+      font-family: 'Segoe UI', Arial, sans-serif;
+    }
+    #catador-dashboard input, #catador-dashboard select {
+      font-family: 'Segoe UI', Arial, sans-serif;
+    }
+  </style>
+</head>
+<body>
+  <!-- App root element -->
+  <div id="app">
+    <!-- Main view -->
+    <div class="view view-main">
+      <!-- TAB BAR -->
+      <div class="toolbar toolbar-bottom">
+        <div class="toolbar-inner display-flex">
+          <a href="/index/" class="tab-link link active">
+            <i class="mdi mdi-home"></i>
+            <span>Home</span>
+          </a>
+          <a href="/link2/" class="tab-link link">
+            <i class="mdi mdi-plus"></i>
+            <span>Adicionar</span>
+          </a>
+          <a href="/link3/" class="tab-link link">
+            <i class="mdi mdi-magnify"></i>
+            <span>Buscar</span>
+          </a>
+          <a href="/link4/" class="tab-link link">
+            <i class="mdi mdi-account"></i>
+            <span>Dados</span>
+          </a>
+        </div>
+      </div>
+      <!-- Página inicial (index) -->
+      <div data-name="index" class="page color-theme-blue">
+        <!-- Topo da página -->
+        <div class="top-nav">
+          <h1 class="title-logo">GreenTech</h1>
+          <p class="subtitle">Reciclagem Sustentável</p>
+          <div class="user-info">
+            <span id="user-name">Usuário</span>
+            <button id="logout-btn" class="logout-btn">
+              <i class="mdi mdi-logout"></i>
+            </button>
+          </div>
+        </div>
+        <!-- Conteúdo da página -->
+        <div class="page-content">
+          <div class="welcome-section">
+            <div class="welcome-card">
+              <i class="mdi mdi-recycle"></i>
+              <h2>Bem-vindo ao GreenTech!</h2>
+              <p>Ajude o planeta registrando seus materiais recicláveis</p>
+            </div>
+          </div>
+          
+          <div class="quick-stats">
+            <div class="stat-item dashboard-card">
+              <i class="mdi mdi-package-variant"></i>
+              <span id="total-materials">0</span>
+              <small>Materiais</small>
+            </div>
+            <div class="stat-item dashboard-card">
+              <i class="mdi mdi-weight"></i>
+              <span id="total-weight-home">0</span>
+              <small>kg</small>
+            </div>
+            <div class="stat-item dashboard-card">
+              <i class="mdi mdi-calendar-today"></i>
+              <span id="today-count">0</span>
+              <small>Hoje</small>
+            </div>
+          </div>
+          
+          <!-- Filtro de raio acima do mapa -->
+          <div id="filtro-raio-container" style="width:100%;max-width:600px;">
+            <div id="filtro-raio-row" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+              <label for="distance-filter" style="font-size:15px;color:#388e3c;">Mostrar catadores num raio de</label>
+              <select id="distance-filter" style="font-size:15px;padding:2px 8px;border-radius:6px;border:1px solid #c8e6c9;">
+                <option value="2">2 km</option>
+                <option value="5" selected>5 km</option>
+                <option value="10">10 km</option>
+                <option value="9999">Todos</option>
+              </select>
+            </div>
+          </div>
+          
+          <!-- Container do Google Maps -->
+          <div class="map-center-container">
+            <div style="position:relative;width:100%;max-width:900px;">
+              <!-- FABs do catador -->
+              <div id="catador-only-fab" style="display:none;">
+                <div id="catador-fab-group" style="position:absolute;left:50%;transform:translateX(-50%);top:-36px;z-index:999;display:flex;gap:18px;">
+                  <button id="btn-update-location-fab" title="Atualizar minha localização" style="background:#43a047;color:#fff;border:none;border-radius:50%;width:56px;height:56px;box-shadow:0 4px 16px rgba(76,175,80,0.18);font-size:28px;cursor:pointer;display:flex;align-items:center;justify-content:center;"><i class="mdi mdi-crosshairs-gps"></i></button>
+                  <button id="btn-reativar-location-fab" title="Reativar minha localização" style="background:#1976d2;color:#fff;border:none;border-radius:50%;width:56px;height:56px;box-shadow:0 4px 16px rgba(25,118,210,0.18);font-size:28px;cursor:pointer;display:flex;align-items:center;justify-content:center;"><i class="mdi mdi-crosshairs"></i></button>
+                  <button id="btn-remove-location-fab" title="Remover minha localização" style="background:#e53935;color:#fff;border:none;border-radius:50%;width:56px;height:56px;box-shadow:0 4px 16px rgba(229,57,53,0.18);font-size:28px;cursor:pointer;display:flex;align-items:center;justify-content:center;"><i class="mdi mdi-map-marker-off"></i></button>
+                </div>
+              </div>
+              <div id="map" style="height:440px;border-radius:22px;box-shadow:0 4px 32px rgba(76,175,80,0.10),0 1.5px 4px rgba(0,0,0,0.08);border:2px solid #e0f2f1;"></div>
+              <div id="map-loading" style="display:none;text-align:center;margin:8px 0;">
+                <span class="loader"></span> Carregando pontos de coleta...
+              </div>
+              <div id="map-message" style="display:none;text-align:center;color:#c62828;font-size:15px;margin-top:8px;"></div>
+            </div>
+          </div>
+          <!-- Mensagem de privacidade para catadores -->
+          <div id="location-privacy-info" style="display:none; text-align:center; margin: 8px auto 0 auto; max-width: 600px; color: #388e3c; font-size: 15px;">
+            <b>Privacidade:</b> Sua localização só será compartilhada se você clicar em "Atualizar minha localização". Você pode remover ou atualizar a qualquer momento.
+          </div>
+          <div style="height:250px;width:100%;pointer-events:none;"></div>
+        </div>
+      </div>
+      <!-- DASHBOARD CATADOR REFORMULADO -->
+      <div id="catador-dashboard" style="display:none;">
+        <div class="map-center-container" style="margin-top:24px;">
+          <div style="width:100%;max-width:900px;">
+            <div style="display:flex;justify-content:flex-end;align-items:center;margin-bottom:8px;gap:12px;">
+              <select id="distance-filter" style="font-size:15px;padding:6px 12px;border-radius:8px;border:1px solid #c8e6c9;background:#f5fff5;">
+                <option value="2">2 km</option>
+                <option value="5" selected>5 km</option>
+                <option value="10">10 km</option>
+                <option value="9999">Todos</option>
+              </select>
+            </div>
+            <div id="map" style="height:440px;border-radius:22px;box-shadow:0 4px 32px rgba(76,175,80,0.10),0 1.5px 4px rgba(0,0,0,0.08);border:2px solid #e0f2f1;"></div>
+            <div id="map-loading" style="display:none;text-align:center;margin:8px 0;">
+              <span class="loader"></span> Carregando pontos de coleta...
+            </div>
+            <div id="map-message" style="display:none;text-align:center;color:#c62828;font-size:15px;margin-top:8px;"></div>
+          </div>
+        </div>
+        <div style="max-width:900px;margin:32px auto 0 auto;">
+          <h3 style="color:#388e3c;margin-bottom:12px;font-weight:600;font-size:1.3rem;">Materiais Disponíveis para Coleta</h3>
+          <div style="display:flex;gap:12px;margin-bottom:12px;">
+            <input id="material-search" type="text" placeholder="Buscar por tipo, descrição..." style="flex:1;padding:10px 16px;border-radius:10px;border:1px solid #c8e6c9;font-size:15px;background:#f5fff5;">
+            <select id="material-type-filter" style="padding:10px 16px;border-radius:10px;border:1px solid #c8e6c9;font-size:15px;background:#f5fff5;">
+              <option value="">Todos os tipos</option>
+              <option value="plastic">Plástico</option>
+              <option value="metal">Metal</option>
+              <option value="paper">Papel</option>
+              <option value="glass">Vidro</option>
+              <option value="organic">Orgânico</option>
+              <option value="other">Outro</option>
+            </select>
+          </div>
+          <div id="materiais-lista"></div>
+        </div>
+        <!-- Painel de resumo para o catador -->
+        <div id="catador-only-painel" style="display:none;max-width:900px;margin:0 auto 24px auto;">
+          <div style="background:#e8f5e9;border-radius:18px;box-shadow:0 2px 12px rgba(76,175,80,0.08);padding:28px 0;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+            <div style="font-size:2.2rem;color:#388e3c;font-weight:700;line-height:1;">
+              <span id="catador-kg-hoje">0.0</span> kg
+            </div>
+            <div style="color:#388e3c;font-size:1.1rem;margin-top:6px;">Quilos coletados hoje</div>
+          </div>
+        </div>
+      </div>
+      <!-- Toast de feedback -->
+      <div id="catador-feedback" style="display:none;position:fixed;bottom:32px;right:32px;z-index:9999;padding:14px 32px;border-radius:12px;font-size:17px;box-shadow:0 4px 24px rgba(0,0,0,0.10);color:#fff;background:#43a047;"></div>
+    </div>
+  </div>
+
+  <!-- Framework7 JS -->
+  <script type="text/javascript" src="/lib/framework7-bundle.min.js"></script>
+  <!-- jQuery (se necessário) -->
+  <script type="text/javascript" src="/lib/jquery-3.7.0.min.js"></script>
+  <!-- API Client -->
+  <script type="text/javascript" src="/js/api.js"></script>
+  <!-- Roteamento do app -->
+  <script type="text/javascript" src="/js/routes.js"></script>
+  <!-- App principal -->
+  <script type="text/javascript" src="/js/app.js"></script>
+  <!-- Se estiver testando no navegador, remova ou comente cordova.js -->
+  <!-- <script src="cordova.js"></script> -->
+
+  <!-- Adicione os scripts do Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  
+  <script>
+    // Define initMap no escopo global para ser chamada pelo callback da API
+    window.initMap = function() {
+      var mapElement = document.getElementById('map');
+      if (mapElement) {
+        // Cria o mapa centralizado em São Paulo (exemplo)
+        var map = new google.maps.Map(mapElement, {
+          center: { lat: -23.550520, lng: -46.633308 },
+          zoom: 15
+        });
+        // Adiciona um marcador (a API atualiza para AdvancedMarkerElement no futuro)
+        var marker = new google.maps.Marker({
+          position: { lat: -23.550520, lng: -46.633308 },
+          map: map,
+          title: 'Você está aqui!'
+        });
+      } else {
+        console.error("Elemento do mapa não encontrado!");
+      }
+    };
+
+    // Gerenciamento do usuário
+    document.addEventListener('DOMContentLoaded', function() {
+      // Mostrar informações do usuário
+      const currentUser = window.GreenTechAuth.getCurrentUser();
+      if (currentUser) {
+        const userNameEl = document.getElementById('user-name');
+        if (userNameEl) {
+          userNameEl.textContent = currentUser.nome;
+        }
+      }
+
+      // Botão de logout
+      const logoutBtn = document.getElementById('logout-btn');
+      if (logoutBtn) {
+        logoutBtn.addEventListener('click', function() {
+          if (confirm('Deseja sair do aplicativo?')) {
+            window.GreenTechAuth.logout();
+          }
+        });
+      }
+
+      // Exibir mensagem de privacidade se for catador
+      const user = window.GreenTechAPI.getCurrentUser();
+      if (user && user.perfil === 'catador') {
+        document.getElementById('location-privacy-info').style.display = 'block';
+      }
+    });
+
+    // Função para pedir permissão e obter localização do usuário
+    function obterLocalizacaoUsuario(callback) {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          function(position) {
+            callback(position.coords.latitude, position.coords.longitude);
+          },
+          function(error) {
+            let mensagem = 'Permissão de localização negada ou não disponível. O mapa será centralizado em Curitiba.';
+            if (error) {
+              switch (error.code) {
+                case error.PERMISSION_DENIED:
+                  mensagem += '\nMotivo: Permissão negada pelo usuário.';
+                  break;
+                case error.POSITION_UNAVAILABLE:
+                  mensagem += '\nMotivo: Informação de localização indisponível.';
+                  break;
+                case error.TIMEOUT:
+                  mensagem += '\nMotivo: Tempo de resposta excedido.';
+                  break;
+                case error.UNKNOWN_ERROR:
+                  mensagem += '\nMotivo: Erro desconhecido.';
+                  break;
+              }
+            }
+            alert(mensagem);
+            callback(-25.4284, -49.2733); // Curitiba
+          }
+        );
+      } else {
+        alert('Geolocalização não suportada. O mapa será centralizado em Curitiba.');
+        callback(-25.4284, -49.2733);
+      }
+    }
+
+    // Inicializa o mapa após o DOM estar pronto
+    window.addEventListener('DOMContentLoaded', function() {
+      obterLocalizacaoUsuario(function(lat, lng) {
+        const map = L.map('map').setView([lat, lng], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+        // Marcador do usuário
+        L.marker([lat, lng]).addTo(map).bindPopup('Você está aqui!').openPopup();
+        // Buscar catadores do backend e adicionar marcadores
+        fetch('http://localhost:3000/api/catadores')
+          .then(res => res.json())
+          .then(data => {
+            if (data.catadores) {
+              data.catadores.forEach(catador => {
+                if (catador.latitude && catador.longitude) {
+                  L.marker([catador.latitude, catador.longitude]).addTo(map)
+                    .bindPopup(`<strong>${catador.nome}</strong><br>${catador.email || ''}`);
+                }
+              });
+            }
+          });
+        // Atualização em tempo real (a cada 10 segundos)
+        setInterval(() => {
+          fetch('http://localhost:3000/api/catadores')
+            .then(res => res.json())
+            .then(data => {
+              // Remover marcadores antigos e adicionar novos (simples: recarregar a página ou implementar lógica avançada)
+              // Aqui, para simplicidade, recarregue a página:
+              location.reload();
+            });
+        }, 10000);
+      });
+    });
+
+    // Exibir dashboard do catador se for perfil catador
+    window.addEventListener('DOMContentLoaded', function() {
+      const user = window.GreenTechAPI.getCurrentUser();
+      if (user && user.perfil === 'catador') {
+        document.getElementById('catador-dashboard').style.display = 'block';
+        // Esconde dashboard padrão
+        document.querySelectorAll('.main-dashboard, .main-content, .main-header').forEach(e => e && (e.style.display = 'none'));
+      }
+    });
+
+    // Lógica do FAB único de localização
+    window.addEventListener('DOMContentLoaded', function() {
+      const btn = document.getElementById('btn-location-fab');
+      const icon = document.getElementById('fab-icon');
+      let ativo = true;
+      btn.onclick = async () => {
+        const user = window.GreenTechAPI.getCurrentUser();
+        if (!user || user.perfil !== 'catador') return;
+        if (ativo) {
+          // Desativar localização
+          await fetch(`http://localhost:3000/api/catadores/${user.id}/localizacao`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${window.GreenTechAPI.token}`
+            },
+            body: JSON.stringify({ latitude: null, longitude: null })
+          });
+          btn.style.background = '#e53935';
+          icon.className = 'mdi mdi-map-marker-off';
+          ativo = false;
+        } else {
+          // Ativar localização
+          if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(async (position) => {
+              await fetch(`http://localhost:3000/api/catadores/${user.id}/localizacao`, {
+                method: 'PUT',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${window.GreenTechAPI.token}`
+                },
+                body: JSON.stringify({ latitude: position.coords.latitude, longitude: position.coords.longitude })
+              });
+              btn.style.background = '#43a047';
+              icon.className = 'mdi mdi-crosshairs-gps';
+              ativo = true;
+            });
+          }
+        }
+      };
+    });
+
+    // Exibir painel de resumo só para catador e ocultar cards antigos
+    window.addEventListener('DOMContentLoaded', function() {
+      // Aguarda o carregamento do usuário
+      setTimeout(function() {
+        const user = window.GreenTechAPI.getCurrentUser();
+        if (user && user.perfil === 'catador') {
+          if (document.getElementById('catador-only-painel')) {
+            document.getElementById('catador-only-painel').style.display = 'block';
+          }
+          // Esconde todos os cards antigos e containers de dashboard
+          ['.dashboard-card', '.main-dashboard', '.main-cards', '.main-content', '.main-header'].forEach(sel => {
+            document.querySelectorAll(sel).forEach(e => e && (e.style.display = 'none'));
+          });
+          // Atualizar quilos coletados hoje
+          fetch(`http://localhost:3000/api/materials?catador_id=${user.id}&hoje=1`)
+            .then(res => res.json())
+            .then(data => {
+              let total = 0;
+              (data.materials || []).forEach(m => {
+                if (m.peso) total += parseFloat(m.peso);
+              });
+              if (document.getElementById('catador-kg-hoje')) {
+                document.getElementById('catador-kg-hoje').textContent = total.toFixed(1);
+              }
+            });
+        } else {
+          // Para outros perfis, mostra os cards antigos normalmente
+          ['.dashboard-card', '.main-dashboard', '.main-cards', '.main-content', '.main-header'].forEach(sel => {
+            document.querySelectorAll(sel).forEach(e => e && (e.style.display = ''));
+          });
+          if (document.getElementById('catador-only-painel')) {
+            document.getElementById('catador-only-painel').style.display = 'none';
+          }
+        }
+      }, 300); // Pequeno delay para garantir que o usuário já foi carregado
+    });
+
+    // Adicione o novo script para esconder/mostrar o filtro de raio
+    window.addEventListener('DOMContentLoaded', function() {
+      setTimeout(function() {
+        const user = window.GreenTechAPI.getCurrentUser();
+        if (user && user.perfil === 'catador') {
+          // Esconde filtro de raio para catador
+          if (document.getElementById('filtro-raio-container')) {
+            document.getElementById('filtro-raio-container').style.display = 'none';
+          }
+          // Esconde também qualquer label/select solto acima do mapa
+          document.querySelectorAll('label[for="distance-filter"], #distance-filter').forEach(e => e && (e.style.display = 'none'));
+        } else {
+          // Mostra filtro para outros perfis
+          if (document.getElementById('filtro-raio-container')) {
+            document.getElementById('filtro-raio-container').style.display = '';
+          }
+          document.querySelectorAll('label[for="distance-filter"], #distance-filter').forEach(e => e && (e.style.display = ''));
+        }
+      }, 300);
+    });
+
+    // Adicione o novo script para esconder/mostrar a aba 'Adicionar'
+    window.addEventListener('DOMContentLoaded', function() {
+      setTimeout(function() {
+        const user = window.GreenTechAPI.getCurrentUser && window.GreenTechAPI.getCurrentUser();
+        if (user && user.perfil === 'catador') {
+          // Esconde a aba/botão 'Adicionar' para catador
+          document.querySelectorAll('a.tab-link.link').forEach(function(el) {
+            if (el.textContent && el.textContent.trim().toLowerCase() === 'adicionar') {
+              el.style.display = 'none';
+            }
+          });
+        } else {
+          // Mostra normalmente para outros perfis
+          document.querySelectorAll('a.tab-link.link').forEach(function(el) {
+            if (el.textContent && el.textContent.trim().toLowerCase() === 'adicionar') {
+              el.style.display = '';
+            }
+          });
+        }
+      }, 300);
+    });
+
+    window.addEventListener('DOMContentLoaded', function() {
+      setTimeout(function() {
+        const user = window.GreenTechAPI.getCurrentUser && window.GreenTechAPI.getCurrentUser();
+        // Detecta se está na aba 'Dados' pelo href '/link4/'
+        const dadosTab = document.querySelector('a.tab-link.link.active[href="/link4/"]') !== null || window.location.pathname.includes('link4');
+        if (user && user.perfil === 'catador' && dadosTab) {
+          // Encontra o container da aba Dados
+          let dadosPage = document.querySelector('div[data-name="index"].page.color-theme-blue');
+          if (!dadosPage) dadosPage = document.querySelector('.page-content');
+          if (dadosPage) {
+            dadosPage.innerHTML = '';
+            // Adiciona blocos de ranking e histórico
+            const rankingDiv = document.createElement('div');
+            rankingDiv.style = 'background:#e8f5e9;border-radius:16px;padding:32px;margin:32px auto 18px auto;max-width:600px;text-align:center;font-size:1.3rem;color:#388e3c;font-weight:600;box-shadow:0 2px 12px rgba(76,175,80,0.08)';
+            rankingDiv.textContent = 'Ranking dos catadores (em breve)';
+            const historicoDiv = document.createElement('div');
+            historicoDiv.style = 'background:#f1f8e9;border-radius:16px;padding:32px;margin:0 auto 32px auto;max-width:600px;text-align:center;font-size:1.1rem;color:#607d8b;font-weight:500;box-shadow:0 2px 12px rgba(76,175,80,0.06)';
+            historicoDiv.textContent = 'Histórico de coletas (em breve)';
+            dadosPage.appendChild(rankingDiv);
+            dadosPage.appendChild(historicoDiv);
+          }
+        }
+      }, 400);
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+      setTimeout(function() {
+        const user = window.GreenTechAPI && window.GreenTechAPI.getCurrentUser && window.GreenTechAPI.getCurrentUser();
+        if (user && user.perfil === 'catador') {
+          if (document.getElementById('catador-only-fab')) document.getElementById('catador-only-fab').style.display = 'block';
+          if (document.getElementById('catador-only-painel')) document.getElementById('catador-only-painel').style.display = 'block';
+        } else {
+          if (document.getElementById('catador-only-fab')) document.getElementById('catador-only-fab').style.display = 'none';
+          if (document.getElementById('catador-only-painel')) document.getElementById('catador-only-painel').style.display = 'none';
+        }
+      }, 300);
+    });
+  </script>
+</body>
+</html>
+

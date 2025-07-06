@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#4CAF50">
+  <title>Login - GreenTech</title>
+  <!-- Framework7 CSS -->
+  <link rel="stylesheet" href="/lib/framework7-bundle.min.css">
+  <!-- CSS Personalizado -->
+  <link rel="stylesheet" href="/css/index.css">
+  <!-- Ícones Material Design -->
+  <link rel="stylesheet" href="/css/materialdesignicons.min.css">
+  <style>
+    .login-container {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      background: linear-gradient(135deg, var(--verde), var(--verde-claro));
+      padding: 20px;
+    }
+    
+    .login-card {
+      background: white;
+      border-radius: 20px;
+      padding: 40px 30px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    }
+    
+    .login-header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    
+    .login-header i {
+      font-size: 60px;
+      color: var(--verde);
+      margin-bottom: 15px;
+    }
+    
+    .login-header h1 {
+      color: var(--verde);
+      font-size: 28px;
+      margin: 0 0 5px 0;
+    }
+    
+    .login-header p {
+      color: #666;
+      margin: 0;
+      font-size: 14px;
+    }
+    
+    .form-tabs {
+      display: flex;
+      margin-bottom: 25px;
+      border-radius: 10px;
+      background: #f5f5f5;
+      padding: 5px;
+    }
+    
+    .form-tab {
+      flex: 1;
+      padding: 12px;
+      text-align: center;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-weight: 500;
+      color: #666;
+    }
+    
+    .form-tab.active {
+      background: var(--verde);
+      color: white;
+    }
+    
+    .form-content {
+      display: none;
+    }
+    
+    .form-content.active {
+      display: block;
+    }
+    
+    .form-group {
+      margin-bottom: 20px;
+    }
+    
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--verde);
+      font-weight: bold;
+      font-size: 14px;
+    }
+    
+    .form-group input,
+    .form-group select {
+      width: 100%;
+      height: 45px;
+      background-color: #f8f8f8;
+      border: 2px solid #e0e0e0;
+      border-radius: 10px;
+      padding: 10px 15px;
+      font-size: 16px;
+      transition: border-color 0.3s;
+      box-sizing: border-box;
+    }
+    
+    .form-group input:focus,
+    .form-group select:focus {
+      outline: none;
+      border-color: var(--verde);
+      background-color: white;
+    }
+    
+    .submit-btn {
+      width: 100%;
+      height: 50px;
+      background: linear-gradient(135deg, var(--verde), var(--verde-claro));
+      border: none;
+      border-radius: 25px;
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s;
+      margin-top: 10px;
+    }
+    
+    .submit-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
+    }
+    
+    .submit-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+    
+    .error-message {
+      background: #ffebee;
+      color: #c62828;
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      font-size: 14px;
+      display: none;
+    }
+    
+    .success-message {
+      background: #e8f5e8;
+      color: var(--verde);
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      font-size: 14px;
+      display: none;
+    }
+    
+    .loading {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(255,255,255,.3);
+      border-radius: 50%;
+      border-top-color: #fff;
+      animation: spin 1s ease-in-out infinite;
+      margin-right: 10px;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <div class="login-card">
+      <div class="login-header">
+        <i class="mdi mdi-recycle"></i>
+        <h1>GreenTech</h1>
+        <p>Conectando pessoas, reciclando o futuro</p>
+      </div>
+      
+      <div class="form-tabs">
+        <div class="form-tab active" data-tab="login">Entrar</div>
+        <div class="form-tab" data-tab="register">Cadastrar</div>
+      </div>
+      
+      <!-- Formulário de Login -->
+      <div class="form-content active" id="login-form">
+        <div class="error-message" id="login-error"></div>
+        <div class="success-message" id="login-success"></div>
+        
+        <form id="loginForm">
+          <div class="form-group">
+            <label for="login-email">Email ou Telefone</label>
+            <input type="text" id="login-email" name="email" placeholder="Digite seu email ou telefone" required>
+          </div>
+          
+          <button type="submit" class="submit-btn" id="login-btn">
+            <span class="loading" style="display: none;"></span>
+            Entrar
+          </button>
+        </form>
+      </div>
+      
+      <!-- Formulário de Cadastro -->
+      <div class="form-content" id="register-form">
+        <div class="error-message" id="register-error"></div>
+        <div class="success-message" id="register-success"></div>
+        
+        <form id="registerForm" style="display: flex; flex-direction: column; gap: 0;">
+          <div class="form-group">
+            <label for="register-nome">Nome Completo</label>
+            <input type="text" id="register-nome" name="nome" placeholder="Digite seu nome completo" required>
+          </div>
+          
+          <div class="form-group">
+            <label for="register-email">Email</label>
+            <input type="email" id="register-email" name="email" placeholder="Digite seu email">
+          </div>
+          
+          <div class="form-group">
+            <label for="register-telefone">Telefone</label>
+            <input type="tel" id="register-telefone" name="telefone" placeholder="Digite seu telefone">
+          </div>
+          
+          <div class="form-group">
+            <label for="register-perfil">Perfil</label>
+            <select id="register-perfil" name="perfil" required>
+              <option value="">Selecione seu perfil</option>
+              <option value="gerador">Gerador (quem oferece materiais)</option>
+              <option value="catador">Catador (quem coleta materiais)</option>
+            </select>
+          </div>
+          <input type="hidden" id="register-latitude" name="latitude">
+          <input type="hidden" id="register-longitude" name="longitude">
+          
+          <div style="margin-top: 20px; display: flex; justify-content: center;">
+            <button type="submit" class="submit-btn" id="register-btn" style="width: 100%; max-width: 300px;">
+              <span class="loading" style="display: none;"></span>
+              Cadastrar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Framework7 JS -->
+  <script type="text/javascript" src="/lib/framework7-bundle.min.js"></script>
+  <!-- jQuery -->
+  <script type="text/javascript" src="/lib/jquery-3.7.0.min.js"></script>
+  
+  <script>
+    // Configuração da API
+    const API_BASE_URL = 'http://localhost:3000/api';
+    
+    // Gerenciamento de estado
+    let currentUser = null;
+    
+    // Verificar se já está logado
+    function checkAuth() {
+      const token = localStorage.getItem('greentech_token');
+      if (token) {
+        // Verificar se o token ainda é válido
+        fetch(`${API_BASE_URL}/auth/me`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+        .then(response => {
+          if (response.ok) {
+            return response.json();
+          }
+          throw new Error('Token inválido');
+        })
+        .then(data => {
+          currentUser = data.user;
+          // Redirecionar para o app
+          window.location.href = '/index/';
+        })
+        .catch(error => {
+          console.log('Token inválido, fazendo login...');
+          localStorage.removeItem('greentech_token');
+        });
+      }
+    }
+    
+    // Alternar entre formulários
+    document.querySelectorAll('.form-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        const targetTab = tab.dataset.tab;
+        
+        // Atualizar tabs
+        document.querySelectorAll('.form-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        
+        // Atualizar formulários
+        document.querySelectorAll('.form-content').forEach(form => form.classList.remove('active'));
+        document.getElementById(`${targetTab}-form`).classList.add('active');
+        
+        // Limpar mensagens
+        clearMessages();
+      });
+    });
+    
+    // Login
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const btn = document.getElementById('login-btn');
+      const loading = btn.querySelector('.loading');
+      const email = document.getElementById('login-email').value;
+      
+      // Validar se é email ou telefone
+      const isEmail = email.includes('@');
+      
+      try {
+        setLoading(btn, true);
+        clearMessages();
+        
+        const response = await fetch(`${API_BASE_URL}/auth/login`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            [isEmail ? 'email' : 'telefone']: email
+          })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+          // Salvar token e dados do usuário
+          localStorage.setItem('greentech_token', data.token);
+          localStorage.setItem('greentech_user', JSON.stringify(data.user));
+          // Inicializa window.GreenTechAPI para uso imediato após login
+          window.GreenTechAPI = {
+            getCurrentUser: () => data.user,
+            token: data.token
+          };
+          showMessage('login-success', 'Login realizado com sucesso! Redirecionando...');
+          
+          // Redirecionar após 1 segundo
+          setTimeout(() => {
+            window.location.href = '/index/';
+          }, 1000);
+        } else {
+          showMessage('login-error', data.error || 'Erro ao fazer login');
+        }
+      } catch (error) {
+        console.error('Erro no login:', error);
+        showMessage('login-error', 'Erro de conexão. Verifique se o servidor está rodando.');
+      } finally {
+        setLoading(btn, false);
+      }
+    });
+    
+    // Cadastro
+    document.getElementById('registerForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('register-btn');
+      const formData = new FormData(e.target);
+      const userData = Object.fromEntries(formData);
+      if (!userData.email && !userData.telefone) {
+        showMessage('register-error', 'Email ou telefone é obrigatório');
+        return;
+      }
+      // Se for catador, tenta pegar localização antes de enviar
+      if (userData.perfil === 'catador' && navigator.geolocation) {
+        setLoading(btn, true);
+        navigator.geolocation.getCurrentPosition(async (pos) => {
+          userData.latitude = pos.coords.latitude;
+          userData.longitude = pos.coords.longitude;
+          document.getElementById('register-latitude').value = pos.coords.latitude;
+          document.getElementById('register-longitude').value = pos.coords.longitude;
+          await enviarCadastro(userData, btn);
+        }, (err) => {
+          setLoading(btn, false);
+          showMessage('register-error', 'Permita o acesso à localização para cadastrar como catador.');
+        });
+      } else {
+        await enviarCadastro(userData, btn);
+      }
+    });
+
+    async function enviarCadastro(userData, btn) {
+      try {
+        clearMessages();
+        const response = await fetch(`${API_BASE_URL}/auth/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(userData)
+        });
+        const data = await response.json();
+        if (response.ok) {
+          // Salvar token e dados do usuário
+          localStorage.setItem('greentech_token', data.token);
+          localStorage.setItem('greentech_user', JSON.stringify(data.user));
+          // Inicializa window.GreenTechAPI para uso imediato após cadastro
+          window.GreenTechAPI = {
+            getCurrentUser: () => data.user,
+            token: data.token
+          };
+          showMessage('register-success', 'Cadastro realizado com sucesso! Redirecionando...');
+          setTimeout(() => { window.location.href = '/index/'; }, 1000);
+        } else {
+          showMessage('register-error', data.error || 'Erro ao fazer cadastro');
+        }
+      } catch (error) {
+        showMessage('register-error', 'Erro de conexão. Verifique se o servidor está rodando.');
+      } finally {
+        setLoading(btn, false);
+      }
+    }
+    
+    // Funções auxiliares
+    function setLoading(btn, loading) {
+      const loadingEl = btn.querySelector('.loading');
+      const text = btn.textContent.trim();
+      
+      if (loading) {
+        loadingEl.style.display = 'inline-block';
+        btn.disabled = true;
+        btn.textContent = 'Carregando...';
+      } else {
+        loadingEl.style.display = 'none';
+        btn.disabled = false;
+        btn.textContent = text;
+      }
+    }
+    
+    function showMessage(type, message) {
+      const messageEl = document.getElementById(type);
+      messageEl.textContent = message;
+      messageEl.style.display = 'block';
+    }
+    
+    function clearMessages() {
+      document.querySelectorAll('.error-message, .success-message').forEach(el => {
+        el.style.display = 'none';
+      });
+    }
+    
+    // Verificar autenticação ao carregar a página
+    document.addEventListener('DOMContentLoaded', checkAuth);
+  </script>
+</body>
+</html> 

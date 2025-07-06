@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <!-- Required meta tags-->
+    <meta charset="utf-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <!-- Color theme for statusbar (Android only) -->
+    <meta name="theme-color" content="#2196f3">
+    <!-- Your app title -->
+    <title>Dados - GreenTech</title>
+    <!-- Path to Framework7 Library Bundle CSS -->
+    <link rel="stylesheet" href="/lib/framework7-bundle.min.css">
+    <!-- CSS PERSONALIZADO PARA MENU-->
+    <link rel="stylesheet" href="/css/index.css">
+    <!--Ícones Material Design-->
+    <link rel="stylesheet" href="/css/materialdesignicons.min.css">
+
+
+</head>
+
+<body>
+    <!-- App root element -->
+    <div id="app">
+
+        <!-- Your main view, should have "view-main" class -->
+        <div class="view view-main">
+            <!-- Initial Page, "data-name" contains page name -->
+            <div data-name="link4" class="page">
+
+                <!-- Top Navbar -->
+                <div class="top-nav">
+                    <h1 class="title-2">Dados e Estatísticas</h1>
+                </div>
+
+                <!-- Scrollable page content -->
+                <div class="page-content">
+                    <div id="catador-kg-hoje-card" style="background:#e8f5e9;border-radius:16px;padding:28px;margin:32px auto 18px auto;max-width:600px;text-align:center;font-size:1.5rem;color:#388e3c;font-weight:700;box-shadow:0 2px 12px rgba(76,175,80,0.08)">
+                        Você já coletou <span id="catador-kg-hoje">0.0</span> kg hoje
+                    </div>
+                    <div style="background:#e8f5e9;border-radius:16px;padding:32px;margin:32px auto 18px auto;max-width:600px;text-align:center;font-size:1.3rem;color:#388e3c;font-weight:600;box-shadow:0 2px 12px rgba(76,175,80,0.08)">
+                        Ranking dos catadores (em breve)
+                    </div>
+                    <div style="background:#f1f8e9;border-radius:16px;padding:32px;margin:0 auto 32px auto;max-width:600px;text-align:center;font-size:1.1rem;color:#607d8b;font-weight:500;box-shadow:0 2px 12px rgba(76,175,80,0.06)">
+                        Histórico de coletas (em breve)
+                    </div>
+                    <div style="height:250px;width:100%;pointer-events:none;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Path to Framework7 Library Bundle JS-->
+    <script type="text/javascript" src="/lib/framework7-bundle.min.js"></script>
+	<!-- jQuery -->
+	<script type="text/javascript" src="/lib/jquery-3.7.0.min.js"></script>	
+    <!-- API Client -->
+    <script type="text/javascript" src="/js/api.js"></script>
+    <!-- Roteamento do app-->
+    <script type="text/javascript" src="/js/routes.js"></script>
+    <!-- App principal -->
+    <script type="text/javascript" src="/js/app.js"></script>
+    <script src="cordova.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      setTimeout(function() {
+        var user = window.GreenTechAPI && window.GreenTechAPI.getCurrentUser && window.GreenTechAPI.getCurrentUser();
+        if (user && user.perfil === 'catador') {
+          fetch(`http://localhost:3000/api/materials?catador_id=${user.id}&hoje=1`)
+            .then(res => res.json())
+            .then(data => {
+              let total = 0;
+              (data.materials || []).forEach(m => {
+                if (m.peso) total += parseFloat(m.peso);
+              });
+              document.getElementById('catador-kg-hoje').textContent = total.toFixed(1);
+            });
+        }
+      }, 300);
+    });
+    </script>
+</body>
+
+</html>
