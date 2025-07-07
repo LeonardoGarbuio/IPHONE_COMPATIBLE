@@ -347,7 +347,7 @@
         // Marcador do usuário
         L.marker([lat, lng]).addTo(map).bindPopup('Você está aqui!').openPopup();
         // Buscar catadores do backend e adicionar marcadores
-        fetch('http://localhost:3000/api/catadores')
+        fetch('https://iphone-compatible-1.onrender.com/api/catadores')
           .then(res => res.json())
           .then(data => {
             if (data.catadores) {
@@ -361,7 +361,7 @@
           });
         // Atualização em tempo real (a cada 10 segundos)
         setInterval(() => {
-          fetch('http://localhost:3000/api/catadores')
+          fetch('https://iphone-compatible-1.onrender.com/api/catadores')
             .then(res => res.json())
             .then(data => {
               // Remover marcadores antigos e adicionar novos (simples: recarregar a página ou implementar lógica avançada)
@@ -392,7 +392,7 @@
         if (!user || user.perfil !== 'catador') return;
         if (ativo) {
           // Desativar localização
-          await fetch(`http://localhost:3000/api/catadores/${user.id}/localizacao`, {
+          await fetch(`https://iphone-compatible-1.onrender.com/api/catadores/${user.id}/localizacao`, {
             method: 'PUT',
             headers: {
               'Content-Type': 'application/json',
@@ -407,7 +407,7 @@
           // Ativar localização
           if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(async (position) => {
-              await fetch(`http://localhost:3000/api/catadores/${user.id}/localizacao`, {
+              await fetch(`https://iphone-compatible-1.onrender.com/api/catadores/${user.id}/localizacao`, {
                 method: 'PUT',
                 headers: {
                   'Content-Type': 'application/json',
@@ -438,7 +438,7 @@
             document.querySelectorAll(sel).forEach(e => e && (e.style.display = 'none'));
           });
           // Atualizar quilos coletados hoje
-          fetch(`http://localhost:3000/api/materials?catador_id=${user.id}&hoje=1`)
+          fetch(`https://iphone-compatible-1.onrender.com/api/materials?catador_id=${user.id}&hoje=1`)
             .then(res => res.json())
             .then(data => {
               let total = 0;

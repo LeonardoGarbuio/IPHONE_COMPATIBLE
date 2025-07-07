@@ -67,7 +67,7 @@
       setTimeout(function() {
         var user = window.GreenTechAPI && window.GreenTechAPI.getCurrentUser && window.GreenTechAPI.getCurrentUser();
         if (user && user.perfil === 'catador') {
-          fetch(`http://localhost:3000/api/materials?catador_id=${user.id}&hoje=1`)
+          fetch(`https://iphone-compatible-1.onrender.com/api/materials?catador_id=${user.id}&hoje=1`)
             .then(res => res.json())
             .then(data => {
               let total = 0;
