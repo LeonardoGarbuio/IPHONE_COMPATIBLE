@@ -537,7 +537,35 @@
         }
       }, 300);
     });
+
+    function inserirBotaoBuscarCatador() {
+      const user = JSON.parse(localStorage.getItem('greentech_user'));
+      if (user && user.perfil === 'catador') {
+        const toolbar = document.querySelector('.toolbar-inner');
+        if (toolbar && !toolbar.querySelector('a[href="/link3/"]')) {
+          const buscarBtn = document.createElement('a');
+          buscarBtn.href = '/link3/';
+          buscarBtn.className = 'tab-link link';
+          buscarBtn.innerHTML = '<i class="mdi mdi-magnify"></i><span>Buscar</span>';
+          const dadosBtn = toolbar.querySelector('a[href="/link4/"]');
+          toolbar.insertBefore(buscarBtn, dadosBtn);
+          return true;
+        }
+      }
+      return false;
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      let tentativas = 0;
+      const maxTentativas = 10;
+      const intervalo = setInterval(() => {
+        if (inserirBotaoBuscarCatador() || ++tentativas >= maxTentativas) {
+          clearInterval(intervalo);
+        }
+      }, 200);
+    });
   </script>
 </body>
 </html>
+
 
