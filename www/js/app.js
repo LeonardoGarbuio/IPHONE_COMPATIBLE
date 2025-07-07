@@ -21,7 +21,7 @@ class GreenTechApp {
             const user = this.api.getCurrentUser();
             let response;
             if (user) {
-                response = await fetch(`http://localhost:3000/api/materials?user_id=${user.id}`);
+                response = await fetch(`https://iphone-compatible-1.onrender.com/api/materials?user_id=${user.id}`);
                 response = await response.json();
             } else {
                 response = await this.api.getMaterials();
@@ -369,7 +369,7 @@ class GreenTechApp {
             try {
                 const latitude = position.coords.latitude;
                 const longitude = position.coords.longitude;
-                await fetch(`http://localhost:3000/api/catadores/${user.id}/localizacao`, {
+                await fetch(`https://iphone-compatible-1.onrender.com/api/catadores/${user.id}/localizacao`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -435,7 +435,7 @@ window.initGreenTechMap = function(userLat, userLng) {
     document.getElementById('map-message').style.display = 'none';
     // Filtro de distância
     const filtro = parseFloat(document.getElementById('distance-filter').value);
-    fetch('http://localhost:3000/api/catadores')
+    fetch('https://iphone-compatible-1.onrender.com/api/catadores')
         .then(res => res.json())
         .then(data => {
             document.getElementById('map-loading').style.display = 'none';
@@ -598,7 +598,7 @@ window.renderMateriaisLista = function(materiais, userLat, userLng) {
 
 // Atualizar lista de materiais disponíveis para coleta
 window.updateMateriaisLista = function(userLat, userLng) {
-    let url = 'http://localhost:3000/api/materials?status=disponivel';
+    let url = 'https://iphone-compatible-1.onrender.com/api/materials?status=disponivel';
     const tipo = document.getElementById('material-type-filter').value;
     const busca = document.getElementById('material-search').value.trim().toLowerCase();
     if (tipo) url += `&tipo=${tipo}`;
@@ -661,7 +661,7 @@ window.addEventListener('DOMContentLoaded', function() {
                     return;
                 }
                 navigator.geolocation.getCurrentPosition(function(pos) {
-                    fetch(`http://localhost:3000/api/catadores/${user.id}/localizacao`, {
+                    fetch(`https://iphone-compatible-1.onrender.com/api/catadores/${user.id}/localizacao`, {
                         method: 'PUT',
                         headers: {
                             'Content-Type': 'application/json',
@@ -707,7 +707,7 @@ window.addEventListener('DOMContentLoaded', function() {
         btnRemover.onclick = () => {
             const user = window.GreenTechAPI.getCurrentUser && window.GreenTechAPI.getCurrentUser();
             if (user && user.perfil === 'catador') {
-                fetch(`http://localhost:3000/api/catadores/${user.id}/localizacao`, {
+                fetch(`https://iphone-compatible-1.onrender.com/api/catadores/${user.id}/localizacao`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -780,7 +780,7 @@ window.reativarLocalizacaoCatador = function(catadorId) {
         return;
     }
     navigator.geolocation.getCurrentPosition(function(pos) {
-        fetch(`http://localhost:3000/api/catadores/${catadorId}/localizacao`, {
+        fetch(`https://iphone-compatible-1.onrender.com/api/catadores/${catadorId}/localizacao`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',

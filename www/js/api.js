@@ -1,7 +1,7 @@
 // Cliente API para integração com o backend GreenTech
 class GreenTechAPI {
     constructor() {
-        this.baseURL = 'http://localhost:3000/api';
+        this.baseURL = 'https://iphone-compatible-1.onrender.com/api';
         this.token = localStorage.getItem('greentech_token');
     }
 

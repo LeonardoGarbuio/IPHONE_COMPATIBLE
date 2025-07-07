@@ -7,7 +7,7 @@ if (window.cordova) {
 }
 
 // Configuração da API
-const API_BASE_URL = 'http://localhost:3000/api';
+const API_BASE_URL = 'https://iphone-compatible-1.onrender.com/api';
 
 // Gerenciamento de autenticação
 let currentUser = null;
