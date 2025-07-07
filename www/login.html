@@ -286,8 +286,10 @@
         })
         .then(data => {
           currentUser = data.user;
-          // Redirecionar para o app
-          window.location.href = '/index/';
+          // Só redireciona se estiver na página de login
+          if (window.location.pathname === '/login/' || window.location.pathname === '/login.html' || window.location.pathname === '/login') {
+            window.location.href = '/index/';
+          }
         })
         .catch(error => {
           console.log('Token inválido, fazendo login...');
