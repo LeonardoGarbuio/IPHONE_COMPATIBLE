@@ -5,6 +5,7 @@ const { initDatabase } = require('./database');
 const authRoutes = require('./routes/auth');
 const materialsRoutes = require('./routes/materials');
 
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -90,11 +91,15 @@ async function startServer() {
     await initDatabase();
     console.log('✅ Banco de dados inicializado!');
     
-    app.listen(3000, '0.0.0.0', () => {
-      console.log('🚀 Servidor GreenTech rodando na porta 3000');
-      console.log('📱 App disponível em: http://localhost:3000');
-      console.log('🔗 API disponível em: http://localhost:3000/api');
-      console.log('�� Health check: http://localhost:3000/api/health');
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`🚀 Servidor GreenTech rodando na porta ${PORT}`);
+      if (process.env.RENDER) {
+        console.log(`🌎 App disponível em: https://${process.env.RENDER_EXTERNAL_HOSTNAME || 'SEU-APP.onrender.com'}`);
+      } else {
+        console.log(`📱 App disponível em: http://localhost:${PORT}`);
+      }
+      console.log(`🔗 API disponível em: /api`);
+      console.log(` Health check: /api/health`);
     });
   } catch (error) {
     console.error('❌ Erro ao inicializar servidor:', error);
