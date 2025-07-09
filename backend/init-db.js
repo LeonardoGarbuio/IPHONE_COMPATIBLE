@@ -56,6 +56,23 @@ initDatabase()
           });
         }
       });
+      // MIGRAÇÃO: Adiciona catador_id na tabela materials se não existir
+      db.all("PRAGMA table_info(materials)", (err, columns) => {
+        if (err) {
+          console.error('Erro ao checar colunas da tabela materials:', err);
+          return;
+        }
+        const colNames = columns.map(c => c.name);
+        if (!colNames.includes('catador_id')) {
+          db.run("ALTER TABLE materials ADD COLUMN catador_id INTEGER", (err) => {
+            if (err) {
+              console.error('Erro ao adicionar coluna catador_id:', err);
+            } else {
+              console.log('Coluna catador_id adicionada com sucesso!');
+            }
+          });
+        }
+      });
     }
 
     addLatLngColumnsIfNeeded();
@@ -68,9 +85,47 @@ initDatabase()
       }
     });
 
-    process.exit(0);
+    // Adiciona a coluna catador_id se não existir
+    const addCatadorIdColumn = async () => {
+      return new Promise((resolve, reject) => {
+        db.all("PRAGMA table_info(materials)", (err, columns) => {
+          if (err) {
+            console.error('Erro ao checar colunas:', err);
+            return reject(err);
+          }
+          const hasCatadorId = columns.some(col => col.name === 'catador_id');
+          if (!hasCatadorId) {
+            db.run('ALTER TABLE materials ADD COLUMN catador_id INTEGER REFERENCES users(id)', (err) => {
+              if (err) {
+                console.error('Erro ao adicionar coluna catador_id:', err);
+                return reject(err);
+              } else {
+                console.log('Coluna catador_id adicionada com sucesso!');
+                db.all("PRAGMA table_info(materials)", (err, cols) => {
+                  if (!err) console.log('Colunas atuais da tabela materials:', cols.map(c => c.name));
+                  resolve();
+                });
+              }
+            });
+          } else {
+            console.log('Coluna catador_id já existe.');
+            console.log('Colunas atuais da tabela materials:', columns.map(c => c.name));
+            resolve();
+          }
+        });
+      });
+    };
+
+    (async () => {
+      try {
+        await addCatadorIdColumn();
+        process.exit(0);
+      } catch (e) {
+        process.exit(1);
+      }
+    })();
   })
   .catch((error) => {
     console.error('❌ Erro ao inicializar banco de dados:', error);
-    process.exit(1);
+    // process.exit(1);
   }); 

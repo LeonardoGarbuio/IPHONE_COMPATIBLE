@@ -21,7 +21,7 @@ class GreenTechApp {
             const user = this.api.getCurrentUser();
             let response;
             if (user) {
-                response = await fetch(`https://iphone-compatible-1.onrender.com/api/materials?user_id=${user.id}`);
+                response = await fetch(`http://localhost:3000/api/materials?user_id=${user.id}`);
                 response = await response.json();
             } else {
                 response = await this.api.getMaterials();
@@ -324,7 +324,10 @@ class GreenTechApp {
         // Corrigir para pegar o array de materiais
         const materials = results.materials || [];
 
-        if (materials.length === 0) {
+        // Antes de mapear os materiais para HTML, filtrar para não exibir status 'coletado'
+        const filteredMaterials = materials.filter(material => material.status !== 'coletado');
+
+        if (filteredMaterials.length === 0) {
             resultsContainer.innerHTML = `
                 <div class="no-results">
                     <i class="mdi mdi-magnify"></i>
@@ -334,22 +337,38 @@ class GreenTechApp {
             return;
         }
 
-        const resultsHTML = materials.map(material => `
-            <div class="material-item">
-                <div class="material-info">
-                    <h4>${this.getTipoDisplayName(material.tipo)}</h4>
-                    <p><strong>Quantidade:</strong> ${material.quantidade}</p>
-                    ${material.peso ? `<p><strong>Peso:</strong> ${material.peso} kg</p>` : ''}
-                    ${material.descricao ? `<p><strong>Descrição:</strong> ${material.descricao}</p>` : ''}
-                    <small>Criado em: ${new Date(material.data_criacao).toLocaleDateString('pt-BR')}</small>
+        const user = window.GreenTechAPI.getCurrentUser();
+        const resultsHTML = filteredMaterials.map(material => {
+            let aceitarBtn = '';
+            if (user && user.perfil === 'catador') {
+                if (material.status === 'disponivel') {
+                    aceitarBtn = `<button class="btn-contact" onclick="aceitarMaterial(${material.id})"><i class="mdi mdi-phone"></i> Aceitar</button>`;
+                } else if (material.status === 'reservado') {
+                    if (material.catador_id === user.id) {
+                        aceitarBtn = `<button class="btn-contact" disabled style="background:#4caf50;color:#fff;"><i class="mdi mdi-check"></i> Reservado por você</button>`;
+                        aceitarBtn += `<button class="btn-coletar" style="margin-left:8px;background:#1976d2;color:#fff;" onclick="coletarMaterial(${material.id})"><i class="mdi mdi-truck-check"></i> Coletar</button>`;
+                    } else {
+                        aceitarBtn = `<button class="btn-contact" disabled style="background:#aaa;color:#fff;"><i class="mdi mdi-lock"></i> Reservado</button>`;
+                    }
+                } else if (material.status === 'coletado') {
+                    aceitarBtn = `<button class="btn-contact" disabled style="background:#aaa;color:#fff;"><i class="mdi mdi-check-all"></i> Coletado</button>`;
+                }
+            }
+            return `
+                <div class="material-item">
+                    <div class="material-info">
+                        <h4>${this.getTipoDisplayName(material.tipo)}</h4>
+                        <p><strong>Quantidade:</strong> ${material.quantidade}</p>
+                        ${material.peso ? `<p><strong>Peso:</strong> ${material.peso} kg</p>` : ''}
+                        ${material.descricao ? `<p><strong>Descrição:</strong> ${material.descricao}</p>` : ''}
+                        <small>Criado em: ${new Date(material.data_criacao).toLocaleDateString('pt-BR')}</small>
+                    </div>
+                    <div class="material-actions">
+                        ${aceitarBtn}
+                    </div>
                 </div>
-                <div class="material-actions">
-                    <button class="btn-contact" onclick="openRouteMaterial(${material.latitude},${material.longitude})">
-                        <i class="mdi mdi-phone"></i> Aceitar
-                    </button>
-                </div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
 
         resultsContainer.innerHTML = resultsHTML;
     }
@@ -395,6 +414,10 @@ function contactCollector(materialId) {
 // Inicializa o app quando o DOM estiver pronto
 document.addEventListener('DOMContentLoaded', function() {
     window.GreenTechApp = new GreenTechApp();
+    console.log('[DEBUG] GreenTechApp instanciado:', window.GreenTechApp);
+    // Sobrescrever displaySearchResults na instância criada
+    window.GreenTechApp.displaySearchResults = GreenTechApp.prototype.displaySearchResults;
+    window.GreenTechApp.performSearch = GreenTechApp.prototype.performSearch;
 });
 
 // Para compatibilidade com Cordova
@@ -572,70 +595,92 @@ window.showFeedback = function(msg, type) {
 };
 
 // Função para renderizar lista de materiais disponíveis
-window.renderMateriaisLista = function(materiais, userLat, userLng) {
-    const lista = document.getElementById('materiais-lista');
-    if (!lista) return;
-    if (!materiais || materiais.length === 0) {
-        lista.innerHTML = '<div style="color:#888;text-align:center;padding:24px;">Nenhum material disponível para coleta.</div>';
-        return;
-    }
-    lista.innerHTML = materiais.map(mat => {
-        const dist = (mat.latitude && mat.longitude && userLat && userLng) ? calcularDistanciaKm(userLat, userLng, mat.latitude, mat.longitude).toFixed(2) : '--';
-        return `<div style="background:#f9fbe7;border-radius:12px;padding:16px 18px;margin-bottom:12px;box-shadow:0 2px 8px rgba(76,175,80,0.06);display:flex;flex-direction:column;gap:6px;">
-            <b>${mat.tipo ? GreenTechApp.prototype.getTipoDisplayName(mat.tipo) : 'Material'}</b>
-            <span><b>Quantidade:</b> ${mat.quantidade || '-'}</span>
-            ${mat.peso ? `<span><b>Peso:</b> ${mat.peso} kg</span>` : ''}
-            ${mat.descricao ? `<span><b>Descrição:</b> ${mat.descricao}</span>` : ''}
-            <span><b>Distância:</b> ${dist} km</span>
-            <div style="display:flex;gap:10px;margin-top:6px;">
-                <button onclick="openRoute(${mat.latitude},${mat.longitude})" style="background:#388e3c;color:#fff;border:none;border-radius:6px;padding:6px 14px;cursor:pointer;">Rota</button>
-                <button onclick="contactMaterialOwner('${mat.telefone || ''}','${mat.email || ''}')" style="background:#1976d2;color:#fff;border:none;border-radius:6px;padding:6px 14px;cursor:pointer;">Contato</button>
-                <button onclick="wantCollect(${mat.id})" style="background:#ffb300;color:#fff;border:none;border-radius:6px;padding:6px 14px;cursor:pointer;">Quero coletar</button>
-            </div>
-        </div>`;
-    }).join('');
-};
+// window.renderMateriaisLista = function(materiais, userLat, userLng) {
+//     window._greentech_materiais = materiais; // Salva referência global para atualização reativa
+//     const lista = document.getElementById('materiais-lista');
+//     if (!lista) return;
+//     if (!materiais || materiais.length === 0) {
+//         lista.innerHTML = '<div style="color:#888;text-align:center;padding:24px;">Nenhum material disponível para coleta.</div>';
+//         return;
+//     }
+//     lista.innerHTML = materiais.map(mat => {
+//         const dist = (mat.latitude && mat.longitude && userLat && userLng) ? calcularDistanciaKm(userLat, userLng, mat.latitude, mat.longitude).toFixed(2) : '--';
+//         // Botão Aceitar/Coletar reativo
+//         let aceitarBtn = '';
+//         const user = window.GreenTechAPI.getCurrentUser && window.GreenTechAPI.getCurrentUser();
+//         if (mat.status === 'disponivel') {
+//             aceitarBtn = `<button class="btn-contact" onclick="aceitarMaterial(${mat.id}, window._greentech_materiais, ${userLat}, ${userLng})"><i class="mdi mdi-phone"></i> Aceitar</button>`;
+//         } else if (mat.status === 'reservado' && user && mat.catador_id === user.id) {
+//             aceitarBtn = `<button class="btn-contact" disabled style="background:#4caf50;color:#fff;"><i class="mdi mdi-check"></i> Reservado por você</button>`;
+//             aceitarBtn += `<button class="btn-coletar" style="margin-left:8px;background:#1976d2;color:#fff;" onclick="coletarMaterial(${mat.id}, window._greentech_materiais, ${userLat}, ${userLng})"><i class="mdi mdi-truck-check"></i> Coletar</button>`;
+//         } else if (mat.status === 'reservado') {
+//             aceitarBtn = `<button class="btn-contact" disabled style="background:#aaa;color:#fff;"><i class="mdi mdi-lock"></i> Reservado</button>`;
+//         } else if (mat.status === 'coletado') {
+//             aceitarBtn = `<button class="btn-contact" disabled style="background:#aaa;color:#fff;"><i class="mdi mdi-check-all"></i> Coletado</button>`;
+//         }
+//         return `<div data-material-id="${mat.id}" style="background:#f9fbe7;border-radius:12px;padding:16px 18px;margin-bottom:12px;box-shadow:0 2px 8px rgba(76,175,80,0.06);display:flex;flex-direction:column;gap:6px;">
+//             <b>${mat.tipo ? GreenTechApp.prototype.getTipoDisplayName(mat.tipo) : 'Material'}</b>
+//             <span><b>Quantidade:</b> ${mat.quantidade || '-'}</span>
+//             ${mat.peso ? `<span><b>Peso:</b> ${mat.peso} kg</span>` : ''}
+//             ${mat.descricao ? `<span><b>Descrição:</b> ${mat.descricao}</span>` : ''}
+//             <span><b>Distância:</b> ${dist} km</span>
+//             <div style="display:flex;gap:10px;margin-top:6px;">
+//                 <button onclick="openRoute(${mat.latitude},${mat.longitude})" style="background:#388e3c;color:#fff;border:none;border-radius:6px;padding:6px 14px;cursor:pointer;">Rota</button>
+//                 <button onclick="contactMaterialOwner('${mat.telefone || ''}','${mat.email || ''}')" style="background:#1976d2;color:#fff;border:none;border-radius:6px;padding:6px 14px;cursor:pointer;">Contato</button>
+//                 ${aceitarBtn}
+//             </div>
+//         </div>`;
+//     }).join('');
+// };
 
 // Atualizar lista de materiais disponíveis para coleta
-window.updateMateriaisLista = function(userLat, userLng) {
-    let url = 'https://iphone-compatible-1.onrender.com/api/materials?status=disponivel';
-    const tipo = document.getElementById('material-type-filter').value;
-    const busca = document.getElementById('material-search').value.trim().toLowerCase();
-    if (tipo) url += `&tipo=${tipo}`;
-    fetch(url)
-        .then(res => res.json())
-        .then(data => {
-            let materiais = data.materials || [];
-            // Filtro por busca
-            if (busca) {
-                materiais = materiais.filter(m =>
-                    (m.tipo && GreenTechApp.prototype.getTipoDisplayName(m.tipo).toLowerCase().includes(busca)) ||
-                    (m.descricao && m.descricao.toLowerCase().includes(busca))
-                );
-            }
-            // Filtro por distância
-            const filtro = parseFloat(document.getElementById('distance-filter').value);
-            console.log('[Filtro] Localização de referência:', userLat, userLng, '| Raio:', filtro);
-            if (userLat && userLng && filtro < 9999) {
-                materiais = materiais.filter(m => m.latitude && m.longitude && calcularDistanciaKm(userLat, userLng, m.latitude, m.longitude) <= filtro);
-            }
-            window.renderMateriaisLista(materiais, userLat, userLng);
-        });
-};
+// window.updateMateriaisLista = function(userLat, userLng) {
+//     let url = 'https://iphone-compatible-1.onrender.com/api/materials?status=disponivel';
+//     const tipo = document.getElementById('material-type-filter').value;
+//     const busca = document.getElementById('material-search').value.trim().toLowerCase();
+//     if (tipo) url += `&tipo=${tipo}`;
+//     fetch(url)
+//         .then(res => res.json())
+//         .then(data => {
+//             let materiais = data.materials || [];
+//             window._greentech_materiais = materiais; // Salva global para reatividade
+//             window._greentech_userLat = userLat;
+//             window._greentech_userLng = userLng;
+//             window.renderMateriaisLista(window._greentech_materiais, userLat, userLng);
+//         });
+// };
 
-// Integrar atualização da lista de materiais e mapa
-window._greentech_updateCatadorDashboard = function() {
-    if (window._greentech_userLat && window._greentech_userLng) {
-        window.initGreenTechMap(window._greentech_userLat, window._greentech_userLng);
-        window.updateMateriaisLista(window._greentech_userLat, window._greentech_userLng);
+// Função para aplicar filtros SEMPRE no array global
+window.filtrarMateriaisReativo = function() {
+    let materiais = window._greentech_materiais || [];
+    const tipoEl = document.getElementById('material-type-filter');
+    const buscaEl = document.getElementById('material-search');
+    const filtroEl = document.getElementById('distance-filter');
+    const tipo = tipoEl ? tipoEl.value : '';
+    const busca = buscaEl ? buscaEl.value.trim().toLowerCase() : '';
+    const filtro = filtroEl ? parseFloat(filtroEl.value) : 9999;
+    const userLat = window._greentech_userLat;
+    const userLng = window._greentech_userLng;
+    if (tipo) {
+        materiais = materiais.filter(m => m.tipo === tipo);
     }
+    if (busca) {
+        materiais = materiais.filter(m =>
+            (m.tipo && GreenTechApp.prototype.getTipoDisplayName(m.tipo).toLowerCase().includes(busca)) ||
+            (m.descricao && m.descricao.toLowerCase().includes(busca))
+        );
+    }
+    if (userLat && userLng && filtro < 9999) {
+        materiais = materiais.filter(m => m.latitude && m.longitude && calcularDistanciaKm(userLat, userLng, m.latitude, m.longitude) <= filtro);
+    }
+    window.renderMateriaisLista(materiais, userLat, userLng);
 };
 
 // Atualizar lista ao mudar filtros
 window.addEventListener('DOMContentLoaded', function() {
     ['material-type-filter','material-search','distance-filter'].forEach(id => {
         const el = document.getElementById(id);
-        if (el) el.addEventListener('input', window._greentech_updateCatadorDashboard);
+        if (el) el.addEventListener('input', window.filtrarMateriaisReativo);
     });
 });
 
@@ -761,6 +806,22 @@ window.updateCatadorLocation = function(lat, lng) {
 // Garante o registro do event listener mesmo em SPAs/Framework7
 
 document.addEventListener('page:init', function (e) {
+    console.log('[DEBUG] page:init disparado para:', e.target?.getAttribute('data-name'));
+    
+    // Montar React em todas as páginas que tenham o container materiais-lista
+    const materiaisLista = document.getElementById('materiais-lista');
+    if (materiaisLista) {
+        console.log('[DEBUG] Container materiais-lista encontrado, montando React...');
+        // Pequeno delay para garantir que o DOM está pronto
+        setTimeout(() => {
+            if (window.mountReact) {
+                window.mountReact();
+            } else {
+                console.log('[DEBUG] Função mountReact não encontrada');
+            }
+        }, 100);
+    }
+    
     // Só registra o listener se estiver na página de adicionar material
     if (e.target && e.target.getAttribute('data-name') === 'link2') {
         const addForm = document.getElementById('add-material-form');
@@ -811,5 +872,177 @@ window.addEventListener('page:beforeremove', function (e) {
     if (window._greentech_map) {
         window._greentech_map.remove();
         window._greentech_map = null;
+    }
+});
+
+// Adicionar vários logs de debug no fluxo de busca e aceitação
+
+// Sobrescrever performSearch para adicionar debug
+GreenTechApp.prototype.performSearch = async function(query, filter) {
+    console.log('[DEBUG] performSearch chamado:', query, filter);
+    try {
+        const results = await this.searchMaterials(query, filter);
+        console.log('[DEBUG] performSearch - resultados recebidos:', results);
+        this.displaySearchResults(results);
+    } catch (error) {
+        console.error('[DEBUG] Erro na busca:', error);
+        this.displaySearchResults([]);
+    }
+};
+
+// Sobrescrever displaySearchResults para adicionar debug
+GreenTechApp.prototype.displaySearchResults = function(results) {
+    console.log('[DEBUG] displaySearchResults chamado');
+    console.log('[DEBUG] Resultados da busca:', results);
+    const resultsContainer = document.getElementById('search-results');
+    if (!resultsContainer) {
+        console.log('[DEBUG] resultsContainer não encontrado');
+        return;
+    }
+    const materials = results.materials || [];
+    console.log('[DEBUG] Materiais recebidos:', materials);
+    const filteredMaterials = materials.filter(material => material.status !== 'coletado');
+    console.log('[DEBUG] Materiais filtrados:', filteredMaterials);
+    if (filteredMaterials.length === 0) {
+        resultsContainer.innerHTML = `
+            <div class="no-results">
+                <i class="mdi mdi-magnify"></i>
+                <p>Nenhum material encontrado</p>
+            </div>
+        `;
+        return;
+    }
+    const user = window.GreenTechAPI.getCurrentUser();
+    console.log('[DEBUG] Usuário atual:', user);
+    const resultsHTML = filteredMaterials.map(material => {
+        let aceitarBtn = '';
+        if (user && user.perfil === 'catador') {
+            if (material.status === 'disponivel') {
+                aceitarBtn = `<button class="btn-contact" onclick="aceitarMaterial(${material.id})"><i class="mdi mdi-phone"></i> Aceitar</button>`;
+            } else if (material.status === 'reservado') {
+                if (material.catador_id === user.id) {
+                    aceitarBtn = `<button class="btn-contact" disabled style="background:#4caf50;color:#fff;"><i class="mdi mdi-check"></i> Reservado por você</button>`;
+                    aceitarBtn += `<button class="btn-coletar" style="margin-left:8px;background:#1976d2;color:#fff;" onclick="coletarMaterial(${material.id})"><i class="mdi mdi-truck-check"></i> Coletar</button>`;
+                } else {
+                    aceitarBtn = `<button class="btn-contact" disabled style="background:#aaa;color:#fff;"><i class="mdi mdi-lock"></i> Reservado</button>`;
+                }
+            } else if (material.status === 'coletado') {
+                aceitarBtn = `<button class="btn-contact" disabled style="background:#aaa;color:#fff;"><i class="mdi mdi-check-all"></i> Coletado</button>`;
+            }
+        }
+        return `
+            <div class="material-item">
+                <div class="material-info">
+                    <h4>${this.getTipoDisplayName(material.tipo)}</h4>
+                    <p><strong>Quantidade:</strong> ${material.quantidade}</p>
+                    ${material.peso ? `<p><strong>Peso:</strong> ${material.peso} kg</p>` : ''}
+                    ${material.descricao ? `<p><strong>Descrição:</strong> ${material.descricao}</p>` : ''}
+                    <small>Criado em: ${new Date(material.data_criacao).toLocaleDateString('pt-BR')}</small>
+                </div>
+                <div class="material-actions">
+                    ${aceitarBtn}
+                </div>
+            </div>
+        `;
+    }).join('');
+    resultsContainer.innerHTML = resultsHTML;
+    console.log('[DEBUG] HTML dos resultados atualizado');
+};
+
+// Adicionar debug no fluxo de aceitação
+window.aceitarMaterial = async function(materialId) {
+    console.log('[DEBUG] aceitarMaterial chamado para materialId:', materialId);
+    const user = window.GreenTechAPI.getCurrentUser();
+    console.log('[DEBUG] Usuário atual em aceitarMaterial:', user);
+    if (!user || user.perfil !== 'catador') return;
+    try {
+        const apiUrl = window.GreenTechAPI.baseURL + `/materials/${materialId}/reservar`;
+        console.log('[DEBUG] Fazendo requisição PUT para:', apiUrl);
+        const response = await fetch(apiUrl, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${window.GreenTechAPI.token}`
+            }
+        });
+        console.log('[DEBUG] Resposta da requisição:', response);
+        if (!response.ok) {
+            let data = {};
+            try { data = await response.json(); } catch(e){}
+            console.log('[DEBUG] Erro ao aceitar material:', data);
+            return;
+        }
+        // Não tenta atualizar array ou chamar filtrarMateriaisReativo
+        // Apenas atualiza a busca na página link3.html com delay
+        const searchInput = document.getElementById('search-input');
+        const filterBtn = document.querySelector('.filter-btn.active');
+        const query = searchInput ? searchInput.value : '';
+        const filter = filterBtn ? filterBtn.dataset.filter : 'all';
+        setTimeout(() => {
+            console.log('[DEBUG] Chamando performSearch após aceitar:', query, filter);
+            if (window.GreenTechApp && window.GreenTechApp.performSearch) {
+                window.GreenTechApp.performSearch(query, filter);
+            }
+        }, 700);
+    } catch (e) {
+        console.error('[DEBUG] Erro inesperado em aceitarMaterial:', e);
+    }
+}
+
+window.coletarMaterial = async function(materialId) {
+    console.log('[DEBUG] coletarMaterial chamado para materialId:', materialId);
+    const user = window.GreenTechAPI.getCurrentUser();
+    if (!user || user.perfil !== 'catador') return;
+    try {
+        const apiUrl = window.GreenTechAPI.baseURL + `/materials/${materialId}/coletar`;
+        console.log('[DEBUG] Fazendo requisição PUT para:', apiUrl);
+        const response = await fetch(apiUrl, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${window.GreenTechAPI.token}`
+            }
+        });
+        console.log('[DEBUG] Resposta da requisição:', response);
+        if (!response.ok) {
+            let data = {};
+            try { data = await response.json(); } catch(e){}
+            console.log('[DEBUG] Erro ao coletar material:', data);
+            return;
+        }
+        // Após coletar, atualizar a busca na página link3.html com delay
+        const searchInput = document.getElementById('search-input');
+        const filterBtn = document.querySelector('.filter-btn.active');
+        const query = searchInput ? searchInput.value : '';
+        const filter = filterBtn ? filterBtn.dataset.filter : 'all';
+        setTimeout(() => {
+            console.log('[DEBUG] Chamando performSearch após coletar:', query, filter);
+            if (window.GreenTechApp && window.GreenTechApp.performSearch) {
+                window.GreenTechApp.performSearch(query, filter);
+            }
+        }, 700);
+    } catch (e) {
+        console.error('[DEBUG] Erro inesperado em coletarMaterial:', e);
+    }
+} 
+
+// Remover listeners diretos dos botões de filtro (substituir por delegação global)
+// (Remover o bloco que começa com document.addEventListener('DOMContentLoaded', function() { ... para .filter-btn)
+
+// Delegação global para filtros
+
+document.addEventListener('click', function(e) {
+    if (e.target.classList && e.target.classList.contains('filter-btn')) {
+        // Remove classe active de todos
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        // Adiciona classe active ao clicado
+        e.target.classList.add('active');
+        // Pega o filtro e a busca
+        const filter = e.target.dataset.filter;
+        const query = document.getElementById('search-input')?.value || '';
+        // Chama a busca
+        if (window.GreenTechApp && window.GreenTechApp.performSearch) {
+            window.GreenTechApp.performSearch(query, filter);
+        }
     }
 }); 

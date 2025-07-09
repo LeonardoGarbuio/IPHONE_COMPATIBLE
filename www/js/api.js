@@ -1,7 +1,10 @@
 // Cliente API para integração com o backend GreenTech
 class GreenTechAPI {
     constructor() {
-        this.baseURL = 'https://iphone-compatible-1.onrender.com/api';
+        this.baseURL =
+          window.location.hostname === "localhost"
+            ? "http://localhost:3000/api"
+            : "https://iphone-compatible-1.onrender.com/api";
         this.token = localStorage.getItem('greentech_token');
     }
 
@@ -18,7 +21,6 @@ class GreenTechAPI {
         return headers;
     }
 
-    // Faz requisição HTTP
     async request(endpoint, options = {}) {
         try {
             const url = `${this.baseURL}${endpoint}`;
@@ -31,7 +33,6 @@ class GreenTechAPI {
             
             if (!response.ok) {
                 if (response.status === 401) {
-                    // Token expirado ou inválido
                     localStorage.removeItem('greentech_token');
                     window.location.href = '/login/';
                     return;
@@ -46,7 +47,6 @@ class GreenTechAPI {
         }
     }
 
-    // Autenticação
     async login(email, senha) {
         const response = await this.request('/auth/login', {
             method: 'POST',

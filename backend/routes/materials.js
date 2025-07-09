@@ -109,6 +109,7 @@ router.get('/search', (req, res) => {
           latitude: material.latitude,
           longitude: material.longitude,
           status: material.status,
+          catador_id: material.catador_id,
           data_criacao: material.created_at,
           user: {
             id: material.user_id,
@@ -166,6 +167,7 @@ router.get('/nearby', (req, res) => {
           latitude: material.latitude,
           longitude: material.longitude,
           status: material.status,
+          catador_id: material.catador_id,
           created_at: material.created_at,
           distance: Math.round(material.distance * 100) / 100, // Arredondar para 2 casas decimais
           user: {
@@ -214,6 +216,7 @@ router.get('/:id', (req, res) => {
           latitude: material.latitude,
           longitude: material.longitude,
           status: material.status,
+          catador_id: material.catador_id,
           created_at: material.created_at,
           user: {
             id: material.user_id,
@@ -300,6 +303,7 @@ router.post('/', authenticateToken, (req, res) => {
             latitude: material.latitude,
             longitude: material.longitude,
             status: material.status,
+            catador_id: material.catador_id,
             created_at: material.created_at,
             user: {
               id: material.user_id,
@@ -391,6 +395,63 @@ router.delete('/:id', authenticateToken, (req, res) => {
     console.error('Erro ao deletar material:', error);
     res.status(500).json({ error: 'Erro interno do servidor' });
   }
+});
+
+// Reservar material (catador)
+router.put('/:id/reservar', authenticateToken, (req, res) => {
+  const { id } = req.params;
+  const catadorId = req.user.id;
+  console.log('[RESERVAR] id:', id, '| catadorId:', catadorId);
+  db.get('SELECT * FROM materials WHERE id = ?', [id], (err, material) => {
+    if (err || !material) {
+      console.error('[RESERVAR] Material não encontrado ou erro:', err);
+      return res.status(404).json({ error: 'Material não encontrado' });
+    }
+    if (material.status !== 'disponivel') {
+      console.warn('[RESERVAR] Material não disponível:', material.status);
+      return res.status(400).json({ error: 'Material já reservado ou coletado' });
+    }
+    db.run('UPDATE materials SET status = ?, catador_id = ? WHERE id = ?', ['reservado', catadorId, id], function (err) {
+      if (err) {
+        console.error('[RESERVAR] Erro ao atualizar material:', err);
+        return res.status(500).json({ error: 'Erro ao reservar material' });
+      }
+      res.json({ success: true });
+    });
+  });
+});
+
+// Marcar material como coletado (catador)
+router.put('/:id/coletar', authenticateToken, (req, res) => {
+  const { id } = req.params;
+  const catadorId = req.user.id;
+  db.get('SELECT * FROM materials WHERE id = ?', [id], (err, material) => {
+    if (err || !material) return res.status(404).json({ error: 'Material não encontrado' });
+    if (material.status !== 'reservado' || material.catador_id !== catadorId) {
+      return res.status(400).json({ error: 'Você não pode coletar este material' });
+    }
+    // Ao invés de atualizar status, deleta o material
+    db.run('DELETE FROM materials WHERE id = ?', [id], function (err) {
+      if (err) return res.status(500).json({ error: 'Erro ao remover material após coleta' });
+      res.json({ success: true });
+    });
+  });
+});
+
+// Deletar material após coleta (apenas pelo catador que reservou)
+router.delete('/:id/coletado', authenticateToken, (req, res) => {
+  const { id } = req.params;
+  const catadorId = req.user.id;
+  db.get('SELECT * FROM materials WHERE id = ?', [id], (err, material) => {
+    if (err || !material) return res.status(404).json({ error: 'Material não encontrado' });
+    if (material.status !== 'coletado' || material.catador_id !== catadorId) {
+      return res.status(403).json({ error: 'Apenas o catador responsável pode apagar após coleta' });
+    }
+    db.run('DELETE FROM materials WHERE id = ?', [id], function (err) {
+      if (err) return res.status(500).json({ error: 'Erro ao apagar material' });
+      res.json({ success: true });
+    });
+  });
 });
 
 module.exports = router; 

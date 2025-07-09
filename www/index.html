@@ -240,6 +240,8 @@
   <script type="text/javascript" src="/js/api.js"></script>
   <!-- Roteamento do app -->
   <script type="text/javascript" src="/js/routes.js"></script>
+  <!-- React para cards reativos -->
+  <!-- <script src="/js/react/main.7b0296ba.js"></script> -->
   <!-- App principal -->
   <script type="text/javascript" src="/js/app.js"></script>
   <!-- Se estiver testando no navegador, remova ou comente cordova.js -->
@@ -334,39 +336,40 @@
     }
 
     // Inicializa o mapa após o DOM estar pronto
-    window.addEventListener('DOMContentLoaded', function() {
-      obterLocalizacaoUsuario(function(lat, lng) {
-        const map = L.map('map').setView([lat, lng], 13);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '© OpenStreetMap contributors'
-        }).addTo(map);
-        // Marcador do usuário
-        L.marker([lat, lng]).addTo(map).bindPopup('Você está aqui!').openPopup();
-        // Buscar catadores do backend e adicionar marcadores
-        fetch('https://iphone-compatible-1.onrender.com/api/catadores')
-          .then(res => res.json())
-          .then(data => {
-            if (data.catadores) {
-              data.catadores.forEach(catador => {
-                if (catador.latitude && catador.longitude) {
-                  L.marker([catador.latitude, catador.longitude]).addTo(map)
-                    .bindPopup(`<strong>${catador.nome}</strong><br>${catador.email || ''}`);
-                }
-              });
-            }
-          });
-        // Atualização em tempo real (a cada 10 segundos)
-        setInterval(() => {
-          fetch('https://iphone-compatible-1.onrender.com/api/catadores')
-            .then(res => res.json())
-            .then(data => {
-              // Remover marcadores antigos e adicionar novos (simples: recarregar a página ou implementar lógica avançada)
-              // Aqui, para simplicidade, recarregue a página:
-              location.reload();
-            });
-        }, 10000);
-      });
-    });
+    // COMENTADO: Esta inicialização está duplicada e causando conflito com app.js
+    // window.addEventListener('DOMContentLoaded', function() {
+    //   obterLocalizacaoUsuario(function(lat, lng) {
+    //     const map = L.map('map').setView([lat, lng], 13);
+    //     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    //       attribution: '© OpenStreetMap contributors'
+    //     }).addTo(map);
+    //     // Marcador do usuário
+    //     L.marker([lat, lng]).addTo(map).bindPopup('Você está aqui!').openPopup();
+    //     // Buscar catadores do backend e adicionar marcadores
+    //     fetch('https://iphone-compatible-1.onrender.com/api/catadores')
+    //       .then(res => res.json())
+    //       .then(data => {
+    //         if (data.catadores) {
+    //           data.catadores.forEach(catador => {
+    //             if (catador.latitude && catador.longitude) {
+    //               L.marker([catador.latitude, catador.longitude]).addTo(map)
+    //                 .bindPopup(`<strong>${catador.nome}</strong><br>${catador.email || ''}`);
+    //             }
+    //           });
+    //         }
+    //       });
+    //     // Atualização em tempo real (a cada 10 segundos)
+    //     setInterval(() => {
+    //       fetch('https://iphone-compatible-1.onrender.com/api/catadores')
+    //         .then(res => res.json())
+    //         .then(data => {
+    //           // Remover marcadores antigos e adicionar novos (simples: recarregar a página ou implementar lógica avançada)
+    //           // Aqui, para simplicidade, recarregue a página:
+    //           location.reload();
+    //         });
+    //     }, 10000);
+    //   });
+    // });
 
     // Exibir dashboard do catador se for perfil catador
     window.addEventListener('DOMContentLoaded', function() {
@@ -382,6 +385,13 @@
     window.addEventListener('DOMContentLoaded', function() {
       const btn = document.getElementById('btn-location-fab');
       const icon = document.getElementById('fab-icon');
+      
+      // Verificar se os elementos existem antes de tentar definir onclick
+      if (!btn || !icon) {
+        console.log('[DEBUG] Elementos btn-location-fab ou fab-icon não encontrados');
+        return;
+      }
+      
       let ativo = true;
       btn.onclick = async () => {
         const user = window.GreenTechAPI.getCurrentUser();

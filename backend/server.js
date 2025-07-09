@@ -76,14 +76,6 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Erro interno do servidor' });
 });
 
-// Rota para qualquer caminho não encontrado
-app.use('*', (req, res) => {
-  res.status(404).json({ 
-    error: 'Rota não encontrada',
-    path: req.originalUrl 
-  });
-});
-
 // Inicializar banco de dados e iniciar servidor
 async function startServer() {
   try {
@@ -106,5 +98,13 @@ async function startServer() {
     process.exit(1);
   }
 }
+
+// Rota para qualquer caminho não encontrado (deve ser o ÚLTIMO middleware)
+app.use('*', (req, res) => {
+  res.status(404).json({ 
+    error: 'Rota não encontrada',
+    path: req.originalUrl 
+  });
+});
 
 startServer(); 
