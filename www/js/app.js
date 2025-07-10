@@ -22,7 +22,7 @@ class GreenTechApp {
             const user = this.api.getCurrentUser();
             let response;
             if (user) {
-                response = await fetch(`http://localhost:3000/api/materials?user_id=${user.id}`);
+                response = await fetch(`https://iphone-compatible-1.onrender.com/api/materials?user_id=${user.id}`);
                 response = await response.json();
             } else {
                 response = await this.api.getMaterials();

@@ -2,7 +2,7 @@
 class GreenTechAPI {
     constructor() {
         // Sempre usar o backend local durante o desenvolvimento
-        this.baseURL = "http://localhost:3000/api";
+        this.baseURL = "https://iphone-compatible-1.onrender.com/api";
         this.token = localStorage.getItem('greentech_token');
     }
 
