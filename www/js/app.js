@@ -13,6 +13,7 @@ class GreenTechApp {
         this.setupEventListeners();
         this.updateStats();
         this.updateHomeStats();
+        await this.renderHistoricoColetas(); // Chamar renderHistoricoColetas ao entrar na tela de estatísticas
     }
 
     // Carrega materiais do backend
@@ -61,16 +62,18 @@ class GreenTechApp {
     // Atualiza estatísticas
     async updateStats() {
         try {
-            const stats = await this.api.getStats();
-            
+            const user = this.api.getCurrentUser();
+            const stats = await this.api.getStats(user && user.perfil === 'catador' ? { catador_id: user.id } : {});
             // Atualiza elementos na página de dados
             const totalItemsEl = document.getElementById('total-items');
             const totalWeightEl = document.getElementById('total-weight');
             const monthItemsEl = document.getElementById('month-items');
+            const totalWeightAllEl = document.getElementById('total-weight-all');
 
             if (totalItemsEl) totalItemsEl.textContent = stats.totalItems || 0;
-            if (totalWeightEl) totalWeightEl.textContent = (stats.totalWeight || 0).toFixed(1) + ' kg';
+            if (totalWeightEl) totalWeightEl.textContent = (stats.todayItemsWeight || 0).toFixed(1) + ' kg';
             if (monthItemsEl) monthItemsEl.textContent = stats.monthItems || 0;
+            if (totalWeightAllEl) totalWeightAllEl.textContent = (stats.totalWeight || 0).toFixed(1) + ' kg';
 
             // Atualiza lista de itens recentes
             this.updateRecentItems();
@@ -403,6 +406,50 @@ class GreenTechApp {
         }, (error) => {
             alert('Erro ao obter localização: ' + error.message);
         });
+    }
+
+    async renderHistoricoColetas() {
+        const user = this.api.getCurrentUser();
+        if (!user || user.perfil !== 'catador') return;
+        const historico = await this.api.getHistoricoColetas(user.id);
+        const container = document.getElementById('historico-coletas');
+        if (!container) return;
+        if (!historico.coletas || historico.coletas.length === 0) {
+            container.innerHTML = '<p style="color:#607d8b;text-align:center;">Nenhuma coleta realizada ainda.</p>';
+            return;
+        }
+        container.innerHTML = historico.coletas.map(item => `
+            <div style="background:#fff;border-radius:10px;padding:14px 18px;margin:10px 0;box-shadow:0 2px 8px rgba(0,0,0,0.04);display:flex;justify-content:space-between;align-items:center;">
+                <div>
+                    <b>${this.getTipoDisplayName(item.tipo)}</b><br>
+                    <small>${item.quantidade || ''}</small>
+                </div>
+                <div style="text-align:right;">
+                    <span style="font-weight:bold;">${item.peso || 0} kg</span><br>
+                    <small>${new Date(item.updated_at || item.created_at).toLocaleDateString('pt-BR')}</small>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    async renderHistoricoDetalhado() {
+        const user = this.api.getCurrentUser();
+        if (!user || user.perfil !== 'catador') return;
+        const historico = await this.api.getHistoricoColetas(user.id);
+        const container = document.getElementById('historico-detalhado');
+        if (!container) return;
+        if (!historico.coletas || historico.coletas.length === 0) {
+            container.innerHTML = '<p style="color:#607d8b;text-align:center;">Nenhuma coleta realizada ainda.</p>';
+            return;
+        }
+        container.innerHTML = historico.coletas.map(item => `
+            <div style="background:#f1f8e9;border-radius:10px;padding:14px 18px;margin:10px 0;box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+                <div><b>${this.getTipoDisplayName(item.tipo)}</b> - ${item.quantidade || ''}</div>
+                <div>Peso: <b>${item.peso || 0} kg</b></div>
+                <div>Data: <b>${new Date(item.updated_at || item.created_at).toLocaleString('pt-BR')}</b></div>
+                <div>Latitude: <b>${item.latitude || '-'}</b> | Longitude: <b>${item.longitude || '-'}</b></div>
+            </div>
+        `).join('');
     }
 }
 
@@ -990,12 +1037,12 @@ window.aceitarMaterial = async function(materialId) {
 }
 
 window.coletarMaterial = async function(materialId) {
-    console.log('[DEBUG] coletarMaterial chamado para materialId:', materialId);
     const user = window.GreenTechAPI.getCurrentUser();
-    if (!user || user.perfil !== 'catador') return;
+    if (!user || user.perfil !== 'catador') {
+        return;
+    }
     try {
         const apiUrl = window.GreenTechAPI.baseURL + `/materials/${materialId}/coletar`;
-        console.log('[DEBUG] Fazendo requisição PUT para:', apiUrl);
         const response = await fetch(apiUrl, {
             method: 'PUT',
             headers: {
@@ -1003,11 +1050,7 @@ window.coletarMaterial = async function(materialId) {
                 'Authorization': `Bearer ${window.GreenTechAPI.token}`
             }
         });
-        console.log('[DEBUG] Resposta da requisição:', response);
         if (!response.ok) {
-            let data = {};
-            try { data = await response.json(); } catch(e){}
-            console.log('[DEBUG] Erro ao coletar material:', data);
             return;
         }
         // Após coletar, atualizar a busca na página link3.html com delay
@@ -1015,14 +1058,18 @@ window.coletarMaterial = async function(materialId) {
         const filterBtn = document.querySelector('.filter-btn.active');
         const query = searchInput ? searchInput.value : '';
         const filter = filterBtn ? filterBtn.dataset.filter : 'all';
-        setTimeout(() => {
-            console.log('[DEBUG] Chamando performSearch após coletar:', query, filter);
+        setTimeout(async () => {
             if (window.GreenTechApp && window.GreenTechApp.performSearch) {
                 window.GreenTechApp.performSearch(query, filter);
             }
+            // Atualizar painel de coleta do dia
+            if (window.GreenTechApp && window.GreenTechApp.loadMaterials && window.GreenTechApp.updateStats) {
+                await window.GreenTechApp.loadMaterials();
+                window.GreenTechApp.updateStats();
+            }
         }, 700);
     } catch (e) {
-        console.error('[DEBUG] Erro inesperado em coletarMaterial:', e);
+        // erro silencioso
     }
 } 
 
@@ -1046,3 +1093,12 @@ document.addEventListener('click', function(e) {
         }
     }
 }); 
+
+// Função para forçar atualização manual
+window.forceUpdateStats = async function() {
+  if (window.GreenTechApp && window.GreenTechApp.loadMaterials && window.GreenTechApp.updateStats) {
+    await window.GreenTechApp.loadMaterials();
+    window.GreenTechApp.updateStats();
+    alert('Dados atualizados!');
+  }
+}; 
