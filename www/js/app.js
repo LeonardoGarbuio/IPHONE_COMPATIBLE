@@ -22,10 +22,17 @@ class GreenTechApp {
             const user = this.api.getCurrentUser();
             let response;
             if (user) {
-                // Envia perfil na query string
-                const url = `${BASE_URL}/materials?user_id=${user.id}&perfil=${user.perfil}`;
-                console.log('[DEBUG] URL materiais:', url);
-                response = await fetch(url);
+                if (user.perfil === 'catador') {
+                    // Para catadores, buscar materiais que eles coletaram
+                    const url = `${BASE_URL}/materials?catador_id=${user.id}`;
+                    console.log('[DEBUG] URL materiais (catador):', url);
+                    response = await fetch(url);
+                } else {
+                    // Para geradores, buscar materiais que eles criaram
+                    const url = `${BASE_URL}/materials?user_id=${user.id}&perfil=${user.perfil}`;
+                    console.log('[DEBUG] URL materiais (gerador):', url);
+                    response = await fetch(url);
+                }
                 response = await response.json();
             } else {
                 response = await this.api.getMaterials();
@@ -170,6 +177,80 @@ class GreenTechApp {
         `).join('');
 
         recentListEl.innerHTML = itemsHTML;
+    }
+
+    // Renderiza histórico de coletas
+    async renderHistoricoDetalhado() {
+        const historicoLista = document.getElementById('historico-lista');
+        const totalColetas = document.getElementById('total-coletas');
+        const pesoTotal = document.getElementById('peso-total');
+        
+        if (!historicoLista) return;
+        
+        try {
+            // Carregar materiais do usuário (coletados se for catador)
+            await this.loadMaterials();
+            
+            const user = this.api.getCurrentUser();
+            let materiais = this.materials;
+            
+            if (user && user.perfil === 'catador') {
+                // Corrigir comparação para garantir que funcione mesmo se tipos forem diferentes
+                materiais = materiais.filter(m => m.status === 'coletado' && String(m.catador_id) == String(user.id));
+            }
+            
+            // Calcular estatísticas
+            const total = materiais.length;
+            const peso = materiais.reduce((sum, m) => sum + (parseFloat(m.peso) || 0), 0);
+            
+            // Atualizar estatísticas
+            if (totalColetas) totalColetas.textContent = total;
+            if (pesoTotal) pesoTotal.textContent = peso.toFixed(1) + ' kg';
+            
+            // Renderizar lista
+            if (materiais.length === 0) {
+                historicoLista.innerHTML = `
+                    <div class="text-align-center">
+                        <i class="mdi mdi-history" style="font-size: 3rem; color: #ccc;"></i>
+                        <p>Nenhuma coleta registrada ainda</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            const historicoHTML = materiais
+                .sort((a, b) => new Date(b.data_criacao) - new Date(a.data_criacao))
+                .map(material => `
+                    <div class="historico-item">
+                        <div class="historico-item-content">
+                            <div>
+                                <strong>${this.getTipoDisplayName(material.tipo)}</strong>
+                                <div class="historico-info">
+                                    Quantidade: ${material.quantidade}
+                                    ${material.peso ? ` | Peso: ${material.peso} kg` : ''}
+                                </div>
+                                <div class="historico-data">
+                                    Coletado em: ${new Date(material.data_criacao).toLocaleDateString('pt-BR')}
+                                </div>
+                            </div>
+                            <div>
+                                <span class="badge-coletado">Coletado</span>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            
+            historicoLista.innerHTML = historicoHTML;
+            
+        } catch (error) {
+            console.error('Erro ao carregar histórico:', error);
+            historicoLista.innerHTML = `
+                <div class="text-align-center">
+                    <i class="mdi mdi-alert" style="font-size: 3rem; color: #f44336;"></i>
+                    <p>Erro ao carregar histórico</p>
+                </div>
+            `;
+        }
     }
 
     // Converte tipo para nome de exibição
@@ -523,25 +604,7 @@ class GreenTechApp {
         `).join('');
     }
 
-    async renderHistoricoDetalhado() {
-        const user = this.api.getCurrentUser();
-        if (!user || user.perfil !== 'catador') return;
-        const historico = await this.api.getHistoricoColetas(user.id);
-        const container = document.getElementById('historico-detalhado');
-        if (!container) return;
-        if (!historico.coletas || historico.coletas.length === 0) {
-            container.innerHTML = '<p style="color:#607d8b;text-align:center;">Nenhuma coleta realizada ainda.</p>';
-            return;
-        }
-        container.innerHTML = historico.coletas.map(item => `
-            <div style="background:#f1f8e9;border-radius:10px;padding:14px 18px;margin:10px 0;box-shadow:0 2px 8px rgba(0,0,0,0.04);">
-                <div><b>${this.getTipoDisplayName(item.tipo)}</b> - ${item.quantidade || ''}</div>
-                <div>Peso: <b>${item.peso || 0} kg</b></div>
-                <div>Data: <b>${new Date(item.updated_at || item.created_at).toLocaleString('pt-BR')}</b></div>
-                <div>Latitude: <b>${item.latitude || '-'}</b> | Longitude: <b>${item.longitude || '-'}</b></div>
-            </div>
-        `).join('');
-    }
+
 }
 
 // Função para contatar coletor (placeholder)
@@ -991,10 +1054,79 @@ window.contactMaterialOwner = function(telefone, email) {
     }
 };
 
+// Função para catador marcar material como coletado
+window.marcarComoColetado = function(materialId) {
+    const user = window.GreenTechAPI.getCurrentUser();
+    if (!user || user.perfil !== 'catador') {
+        showFeedback('Apenas catadores podem coletar materiais.', 'error');
+        return;
+    }
+    
+    // Fazer requisição para marcar como coletado
+    fetch(`https://iphone-compatible-1.onrender.com/api/materials/${materialId}/coletar`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${window.GreenTechAPI.token}`
+        }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            showFeedback('Material coletado com sucesso!', 'success');
+            // Atualizar o histórico do catador
+            if (window.GreenTechApp) {
+                window.GreenTechApp.loadMaterials().then(() => {
+                    window.GreenTechApp.updateStats();
+                    window.GreenTechApp.updateHomeStats();
+                });
+            }
+            // Atualizar a lista de materiais disponíveis
+            if (window._greentech_updateCatadorDashboard) {
+                window._greentech_updateCatadorDashboard();
+            }
+        } else {
+            showFeedback(data.error || 'Erro ao coletar material.', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Erro ao coletar material:', error);
+        showFeedback('Erro ao coletar material.', 'error');
+    });
+};
+
 // Função para catador sinalizar interesse em coletar
 window.wantCollect = function(materialId) {
-    // Aqui pode ser feita uma requisição para o backend registrar o interesse
-    showFeedback('Interesse registrado! O gerador será notificado.', 'success');
+    const user = window.GreenTechAPI.getCurrentUser();
+    if (!user || user.perfil !== 'catador') {
+        showFeedback('Apenas catadores podem coletar materiais.', 'error');
+        return;
+    }
+    
+    // Fazer requisição para reservar o material
+    fetch(`https://iphone-compatible-1.onrender.com/api/materials/${materialId}/reservar`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${window.GreenTechAPI.token}`
+        }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            showFeedback('Material reservado com sucesso!', 'success');
+            // Atualizar a lista de materiais disponíveis
+            if (window._greentech_updateCatadorDashboard) {
+                window._greentech_updateCatadorDashboard();
+            }
+        } else {
+            showFeedback(data.error || 'Erro ao reservar material.', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Erro ao reservar material:', error);
+        showFeedback('Erro ao reservar material.', 'error');
+    });
 };
 
 // Função para mostrar feedback visual
@@ -1013,60 +1145,69 @@ window.showFeedback = function(msg, type) {
 };
 
 // Função para renderizar lista de materiais disponíveis
-// window.renderMateriaisLista = function(materiais, userLat, userLng) {
-//     window._greentech_materiais = materiais; // Salva referência global para atualização reativa
-//     const lista = document.getElementById('materiais-lista');
-//     if (!lista) return;
-//     if (!materiais || materiais.length === 0) {
-//         lista.innerHTML = '<div style="color:#888;text-align:center;padding:24px;">Nenhum material disponível para coleta.</div>';
-//         return;
-//     }
-//     lista.innerHTML = materiais.map(mat => {
-//         const dist = (mat.latitude && mat.longitude && userLat && userLng) ? calcularDistanciaKm(userLat, userLng, mat.latitude, mat.longitude).toFixed(2) : '--';
-//         // Botão Aceitar/Coletar reativo
-//         let aceitarBtn = '';
-//         const user = window.GreenTechAPI.getCurrentUser && window.GreenTechAPI.getCurrentUser();
-//         if (mat.status === 'disponivel') {
-//             aceitarBtn = `<button class="btn-contact" onclick="aceitarMaterial(${mat.id}, window._greentech_materiais, ${userLat}, ${userLng})"><i class="mdi mdi-phone"></i> Aceitar</button>`;
-//         } else if (mat.status === 'reservado' && user && mat.catador_id === user.id) {
-//             aceitarBtn = `<button class="btn-contact" disabled style="background:#4caf50;color:#fff;"><i class="mdi mdi-check"></i> Reservado por você</button>`;
-//             aceitarBtn += `<button class="btn-coletar" style="margin-left:8px;background:#1976d2;color:#fff;" onclick="coletarMaterial(${mat.id}, window._greentech_materiais, ${userLat}, ${userLng})"><i class="mdi mdi-truck-check"></i> Coletar</button>`;
-//         } else if (mat.status === 'reservado') {
-//             aceitarBtn = `<button class="btn-contact" disabled style="background:#aaa;color:#fff;"><i class="mdi mdi-lock"></i> Reservado</button>`;
-//         } else if (mat.status === 'coletado') {
-//             aceitarBtn = `<button class="btn-contact" disabled style="background:#aaa;color:#fff;"><i class="mdi mdi-check-all"></i> Coletado</button>`;
-//         }
-//         return `<div data-material-id="${mat.id}" style="background:#f9fbe7;border-radius:12px;padding:16px 18px;margin-bottom:12px;box-shadow:0 2px 8px rgba(76,175,80,0.06);display:flex;flex-direction:column;gap:6px;">
-//             <b>${mat.tipo ? GreenTechApp.prototype.getTipoDisplayName(mat.tipo) : 'Material'}</b>
-//             <span><b>Quantidade:</b> ${mat.quantidade || '-'}</span>
-//             ${mat.peso ? `<span><b>Peso:</b> ${mat.peso} kg</span>` : ''}
-//             ${mat.descricao ? `<span><b>Descrição:</b> ${mat.descricao}</span>` : ''}
-//             <span><b>Distância:</b> ${dist} km</span>
-//             <div style="display:flex;gap:10px;margin-top:6px;">
-//                 <button onclick="openRoute(${mat.latitude},${mat.longitude})" style="background:#388e3c;color:#fff;border:none;border-radius:6px;padding:6px 14px;cursor:pointer;">Rota</button>
-//                 <button onclick="contactMaterialOwner('${mat.telefone || ''}','${mat.email || ''}')" style="background:#1976d2;color:#fff;border:none;border-radius:6px;padding:6px 14px;cursor:pointer;">Contato</button>
-//                 ${aceitarBtn}
-//             </div>
-//         </div>`;
-//     }).join('');
-// };
+window.renderMateriaisLista = function(materiais, userLat, userLng) {
+    window._greentech_materiais = materiais; // Salva referência global para atualização reativa
+    const lista = document.getElementById('materiais-lista');
+    if (!lista) return;
+    if (!materiais || materiais.length === 0) {
+        lista.innerHTML = '<div style="color:#888;text-align:center;padding:24px;">Nenhum material disponível para coleta.</div>';
+        return;
+    }
+    
+    const user = window.GreenTechAPI.getCurrentUser();
+    const isCatador = user && user.perfil === 'catador';
+    
+    lista.innerHTML = materiais.map(mat => {
+        const dist = (mat.latitude && mat.longitude && userLat && userLng) ? calcularDistanciaKm(userLat, userLng, mat.latitude, mat.longitude).toFixed(2) : '--';
+        const isReservadoPorMim = isCatador && mat.status === 'reservado' && mat.catador_id === user.id;
+        const isDisponivel = mat.status === 'disponivel';
+        
+        let actionButton = '';
+        if (isCatador) {
+            if (isReservadoPorMim) {
+                actionButton = `<button onclick="marcarComoColetado(${mat.id})" style="background:#43a047;color:#fff;border:none;border-radius:6px;padding:6px 14px;cursor:pointer;">Marcar como Coletado</button>`;
+            } else if (isDisponivel) {
+                actionButton = `<button onclick="wantCollect(${mat.id})" style="background:#ffb300;color:#fff;border:none;border-radius:6px;padding:6px 14px;cursor:pointer;">Quero coletar</button>`;
+            } else {
+                actionButton = `<span style="color:#888;font-size:12px;">${mat.status === 'reservado' ? 'Reservado' : 'Coletado'}</span>`;
+            }
+        }
+        
+        return `<div data-material-id="${mat.id}" style="background:#f9fbe7;border-radius:12px;padding:16px 18px;margin-bottom:12px;box-shadow:0 2px 8px rgba(76,175,80,0.06);display:flex;flex-direction:column;gap:6px;">
+            <b>${mat.tipo ? GreenTechApp.prototype.getTipoDisplayName(mat.tipo) : 'Material'}</b>
+            <span><b>Quantidade:</b> ${mat.quantidade || '-'}</span>
+            ${mat.peso ? `<span><b>Peso:</b> ${mat.peso} kg</span>` : ''}
+            ${mat.descricao ? `<span><b>Descrição:</b> ${mat.descricao}</span>` : ''}
+            <span><b>Distância:</b> ${dist} km</span>
+            <span><b>Status:</b> ${mat.status || 'disponivel'}</span>
+            <div style="display:flex;gap:10px;margin-top:6px;">
+                <button onclick="openRoute(${mat.latitude},${mat.longitude})" style="background:#388e3c;color:#fff;border:none;border-radius:6px;padding:6px 14px;cursor:pointer;">Rota</button>
+                <button onclick="contactMaterialOwner('${mat.telefone || ''}','${mat.email || ''}')" style="background:#1976d2;color:#fff;border:none;border-radius:6px;padding:6px 14px;cursor:pointer;">Contato</button>
+                ${actionButton}
+            </div>
+        </div>`;
+    }).join('');
+};
 
 // Atualizar lista de materiais disponíveis para coleta
-// window.updateMateriaisLista = function(userLat, userLng) {
-//     let url = 'https://iphone-compatible-1.onrender.com/api/materials?status=disponivel';
-//     const tipo = document.getElementById('material-type-filter').value;
-//     const busca = document.getElementById('material-search').value.trim().toLowerCase();
-//     if (tipo) url += `&tipo=${tipo}`;
-//     fetch(url)
-//         .then(res => res.json())
-//         .then(data => {
-//             let materiais = data.materials || [];
-//             window._greentech_materiais = materiais; // Salva global para reatividade
-//             window._greentech_userLat = userLat;
-//             window._greentech_userLng = userLng;
-//             window.renderMateriaisLista(window._greentech_materiais, userLat, userLng);
-//         });
-// };
+window.updateMateriaisLista = function(userLat, userLng) {
+    let url = 'https://iphone-compatible-1.onrender.com/api/materials';
+    const tipo = document.getElementById('material-type-filter')?.value;
+    const busca = document.getElementById('material-search')?.value.trim().toLowerCase();
+    if (tipo) url += `?tipo=${tipo}`;
+    fetch(url)
+        .then(res => res.json())
+        .then(data => {
+            let materiais = data.materials || [];
+            window._greentech_materiais = materiais; // Salva global para reatividade
+            window._greentech_userLat = userLat;
+            window._greentech_userLng = userLng;
+            window.renderMateriaisLista(window._greentech_materiais, userLat, userLng);
+        })
+        .catch(error => {
+            console.error('Erro ao carregar materiais:', error);
+        });
+};
 
 // Função para aplicar filtros SEMPRE no array global
 window.filtrarMateriaisReativo = function() {
@@ -1672,4 +1813,20 @@ document.addEventListener('page:afterin', function(e) {
     setTimeout(mostrarBlocosSeCatadorTentativas, 100);
   }
 });
-// --- FIM: Exibição de blocos exclusivos para catador na página de dados (link4) --- 
+// --- FIM: Exibição de blocos exclusivos para catador na página de dados (link4) ---
+
+// Event listener específico para o botão de histórico
+document.addEventListener('click', function(e) {
+    if (e.target && e.target.id === 'catador-historico-btn') {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // Navegar para a página de histórico
+        if (typeof app !== 'undefined' && app.views && app.views.main && app.views.main.router) {
+            app.views.main.router.navigate('/historico/');
+        } else {
+            window.location.href = '/historico/';
+        }
+        return false;
+    }
+}); 

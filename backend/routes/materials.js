@@ -249,13 +249,19 @@ router.get('/:id', (req, res) => {
   }
 });
 
-// GET /api/materials?user_id=ID&perfil=catador|gerador
+// GET /api/materials?user_id=ID&perfil=catador|gerador ou ?catador_id=ID
 router.get('/', (req, res) => {
   const userId = req.query.user_id;
   const perfil = req.query.perfil; // Recebe o perfil do usuário
+  const catadorId = req.query.catador_id; // Novo parâmetro para buscar por catador
   let sql = 'SELECT * FROM materials';
   let params = [];
-  if (userId && perfil === 'catador') {
+  
+  if (catadorId) {
+    // Buscar materiais coletados por um catador específico
+    sql += ' WHERE catador_id = ?';
+    params.push(catadorId);
+  } else if (userId && perfil === 'catador') {
     // Mostra materiais reservados/coletados pelo catador OU disponíveis para coleta
     sql += ' WHERE (catador_id = ? OR status = "disponivel")';
     params.push(userId);
@@ -266,6 +272,7 @@ router.get('/', (req, res) => {
     sql += ' WHERE user_id = ?';
     params.push(userId);
   }
+  
   db.all(sql, params, (err, rows) => {
     if (err) {
       return res.status(500).json({ error: 'Erro ao buscar materiais' });
@@ -495,11 +502,11 @@ router.put('/:id/coletar', authenticateToken, (req, res) => {
       return res.status(404).json({ error: 'Material não encontrado' });
     }
     console.log('[COLETAR] Material encontrado:', material);
-    if (material.status !== 'reservado' || material.catador_id !== catadorId) {
-      console.log('[COLETAR] Permissão negada. Status:', material.status, '| catador_id:', material.catador_id, '| catadorId:', catadorId);
-      return res.status(400).json({ error: 'Você não pode coletar este material' });
+    // Permitir coletar se status for 'disponivel' ou 'reservado', e atualizar catador_id
+    if (material.status === 'coletado') {
+      return res.status(400).json({ error: 'Material já coletado' });
     }
-    db.run('UPDATE materials SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', ['coletado', id], function (err) {
+    db.run('UPDATE materials SET status = ?, catador_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', ['coletado', catadorId, id], function (err) {
       if (err) {
         console.log('[COLETAR] Erro ao marcar como coletado:', err);
         return res.status(500).json({ error: 'Erro ao marcar como coletado' });

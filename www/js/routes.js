@@ -19,9 +19,12 @@ function checkAuth() {
   const token = localStorage.getItem('greentech_token');
   const userData = localStorage.getItem('greentech_user');
   
+  console.log('[DEBUG] checkAuth - token:', !!token, 'userData:', !!userData);
+  
   if (token && userData) {
     try {
       currentUser = JSON.parse(userData);
+      console.log('[DEBUG] checkAuth - usuário carregado:', currentUser);
       return true;
     } catch (error) {
       console.error('Erro ao parsear dados do usuário:', error);
@@ -29,6 +32,7 @@ function checkAuth() {
       return false;
     }
   }
+  console.log('[DEBUG] checkAuth - não autenticado');
   return false;
 }
 
@@ -48,10 +52,13 @@ function requiresAuth(route) {
 
 // Função para forçar redirecionamento para login se não autenticado
 function forceAuth(page, router) {
+  console.log('[DEBUG] forceAuth - verificando autenticação para página:', page.name);
   if (!checkAuth()) {
+    console.log('[DEBUG] forceAuth - não autenticado, redirecionando para login');
     router.navigate('/login/');
     return false;
   }
+  console.log('[DEBUG] forceAuth - autenticado, permitindo acesso');
   return true;
 }
 
@@ -73,6 +80,37 @@ var app = new Framework7({
   },
   // Define as rotas
   routes: [
+    {
+      path: '/historico/',
+      url: '/historico.html',
+      animate: false,
+      on: {
+        pageBeforeIn: function (event, page) {
+          console.log('[DEBUG] /historico/ - pageBeforeIn iniciado');
+          if (!forceAuth(page, app.views.main.router)) {
+            console.log('[DEBUG] /historico/ - forceAuth falhou, saindo');
+            return;
+          }
+          console.log('[DEBUG] /historico/ - forceAuth passou, carregando histórico');
+          // Carregar histórico detalhado se necessário
+          if (window.GreenTechApp && window.GreenTechApp.renderHistoricoDetalhado) {
+            console.log('[DEBUG] /historico/ - chamando renderHistoricoDetalhado');
+            window.GreenTechApp.renderHistoricoDetalhado();
+          } else {
+            console.log('[DEBUG] /historico/ - GreenTechApp ou renderHistoricoDetalhado não disponível');
+          }
+        },
+        pageAfterIn: function (event, page) {
+          console.log('[DEBUG] /historico/ - pageAfterIn');
+        },
+        pageInit: function (event, page) {
+          console.log('[DEBUG] /historico/ - pageInit');
+        },
+        pageBeforeRemove: function (event, page) {
+          console.log('[DEBUG] /historico/ - pageBeforeRemove');
+        },
+      },
+    },
     {
       path: '/login/',
       url: '/login.html',
@@ -182,23 +220,6 @@ var app = new Framework7({
         pageBeforeRemove: function (event, page) {},
       },
     },
-    {
-      path: '/historico/',
-      url: '/historico.html',
-      animate: false,
-      on: {
-        pageBeforeIn: function (event, page) {
-          if (!forceAuth(page, app.views.main.router)) return;
-          // Carregar histórico detalhado se necessário
-          if (window.GreenTechApp && window.GreenTechApp.renderHistoricoDetalhado) {
-            window.GreenTechApp.renderHistoricoDetalhado();
-          }
-        },
-        pageAfterIn: function (event, page) {},
-        pageInit: function (event, page) {},
-        pageBeforeRemove: function (event, page) {},
-      },
-    },
   ],
 });
 
@@ -220,13 +241,26 @@ app.on('routeChange', function (route) {
 });
 
 function onDeviceReady() {
+  console.log('[DEBUG] onDeviceReady - iniciado');
   // Verificar autenticação inicial
   if (!checkAuth()) {
+    console.log('[DEBUG] onDeviceReady - não autenticado, indo para login');
     // Se não estiver logado, ir para login
     var mainView = app.views.create('.view-main', { url: '/login/' });
   } else {
-    // Se estiver logado, ir para home
-    var mainView = app.views.create('.view-main', { url: '/index/' });
+    console.log('[DEBUG] onDeviceReady - autenticado');
+    // Se estiver logado, verificar se há uma rota específica na URL
+    const currentPath = window.location.pathname;
+    console.log('[DEBUG] onDeviceReady - currentPath:', currentPath);
+    if (currentPath && currentPath !== '/' && currentPath !== '/index/') {
+      // Se há uma rota específica, usar ela
+      console.log('[DEBUG] onDeviceReady - usando rota específica:', currentPath);
+      var mainView = app.views.create('.view-main', { url: currentPath });
+    } else {
+      // Se não há rota específica, ir para home
+      console.log('[DEBUG] onDeviceReady - indo para index');
+      var mainView = app.views.create('.view-main', { url: '/index/' });
+    }
   }
 
   // Trata o botão voltar (Android)
