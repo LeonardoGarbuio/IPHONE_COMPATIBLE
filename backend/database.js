@@ -3,7 +3,6 @@ const path = require('path');
 
 // Caminho para o arquivo do banco de dados
 const dbPath = path.join(__dirname, 'greentech.db');
-console.log('Banco em uso:', dbPath);
 
 // Criar conexão com o banco
 const db = new sqlite3.Database(dbPath, (err) => {
