@@ -37,7 +37,7 @@
 
                 <!-- Scrollable page content -->
                 <div class="page-content">
-                    <form id="add-material-form">
+                    <form id="add-material-form" onsubmit="return false;">
                         <div class="form-group">
                             <label for="tipo">Tipo de Material: *</label>
                             <select name="tipo" id="tipo" required>
@@ -84,7 +84,7 @@
                             <input type="hidden" name="longitude" id="longitude">
                         </div>
                         
-                        <button type="submit" class="submit-btn">
+                        <button type="submit" class="submit-btn" id="btn-add-material">
                             <i class="mdi mdi-plus"></i>
                             Adicionar Material
                         </button>

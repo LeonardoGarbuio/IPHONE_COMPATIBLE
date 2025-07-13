@@ -13,6 +13,7 @@ class GreenTechApp {
         this.setupEventListeners();
         this.updateStats();
         this.updateHomeStats();
+        await this.renderHistoricoColetas(); // Chamar renderHistoricoColetas ao entrar na tela de estatísticas
     }
 
     // Carrega materiais do backend
@@ -21,12 +22,16 @@ class GreenTechApp {
             const user = this.api.getCurrentUser();
             let response;
             if (user) {
-                response = await fetch(`http://localhost:3000/api/materials?user_id=${user.id}`);
+                // Envia perfil na query string
+                const url = `${BASE_URL}/materials?user_id=${user.id}&perfil=${user.perfil}`;
+                console.log('[DEBUG] URL materiais:', url);
+                response = await fetch(url);
                 response = await response.json();
             } else {
                 response = await this.api.getMaterials();
             }
             this.materials = response.materials || [];
+            console.log('[DEBUG] loadMaterials - materiais carregados:', this.materials);
         } catch (error) {
             console.error('Erro ao carregar materiais:', error);
             this.materials = [];
@@ -36,11 +41,15 @@ class GreenTechApp {
     // Adiciona um novo material
     async addMaterial(material) {
         try {
+            console.log('[DEBUG] addMaterial - material a ser enviado:', material);
             const newMaterial = await this.api.addMaterial(material);
-            this.materials.push(newMaterial);
+            console.log('[DEBUG] addMaterial - resposta do backend:', newMaterial);
+            
+            // Recarrega materiais para garantir dados atualizados
             await this.loadMaterials();
             this.updateStats();
             this.updateHomeStats();
+            
             return newMaterial;
         } catch (error) {
             console.error('Erro ao adicionar material:', error);
@@ -61,16 +70,35 @@ class GreenTechApp {
     // Atualiza estatísticas
     async updateStats() {
         try {
-            const stats = await this.api.getStats();
-            
+            const user = this.api.getCurrentUser();
+            const stats = await this.api.getStats(user && user.perfil === 'catador' ? { catador_id: user.id } : {});
+            console.log('[DEBUG] updateStats - stats recebidas:', stats);
             // Atualiza elementos na página de dados
             const totalItemsEl = document.getElementById('total-items');
             const totalWeightEl = document.getElementById('total-weight');
             const monthItemsEl = document.getElementById('month-items');
+            const totalWeightAllEl = document.getElementById('total-weight-all');
 
-            if (totalItemsEl) totalItemsEl.textContent = stats.totalItems || 0;
-            if (totalWeightEl) totalWeightEl.textContent = (stats.totalWeight || 0).toFixed(1) + ' kg';
-            if (monthItemsEl) monthItemsEl.textContent = stats.monthItems || 0;
+            if (totalItemsEl) {
+                totalItemsEl.textContent = stats.totalItems || 0;
+            } else {
+                console.log('[DEBUG] Elemento total-items não encontrado');
+            }
+            if (totalWeightEl) {
+                totalWeightEl.textContent = (stats.todayItemsWeight || 0).toFixed(1) + ' kg';
+            } else {
+                console.log('[DEBUG] Elemento total-weight não encontrado');
+            }
+            if (monthItemsEl) {
+                monthItemsEl.textContent = stats.monthItems || 0;
+            } else {
+                console.log('[DEBUG] Elemento month-items não encontrado');
+            }
+            if (totalWeightAllEl) {
+                totalWeightAllEl.textContent = (stats.totalWeight || 0).toFixed(1) + ' kg';
+            } else {
+                console.log('[DEBUG] Elemento total-weight-all não encontrado');
+            }
 
             // Atualiza lista de itens recentes
             this.updateRecentItems();
@@ -82,20 +110,36 @@ class GreenTechApp {
     // Atualiza estatísticas da página inicial
     updateHomeStats() {
         const totalMaterials = this.materials.length;
-        const totalWeight = this.materials.reduce((sum, material) => 
-            sum + (parseFloat(material.peso) || 0), 0);
-        
+        const totalWeight = this.materials.reduce((sum, material) => {
+            const peso = parseFloat(material.peso) || 0;
+            console.log('[DEBUG] Material:', material.tipo, 'peso:', peso);
+            return sum + peso;
+        }, 0);
         const today = new Date().toDateString();
         const todayCount = this.materials.filter(material => 
             new Date(material.data_criacao).toDateString() === today).length;
-
+        
+        console.log('[DEBUG] updateHomeStats - totalMaterials:', totalMaterials, 'totalWeight:', totalWeight, 'todayCount:', todayCount);
+        
         const totalMaterialsEl = document.getElementById('total-materials');
         const totalWeightHomeEl = document.getElementById('total-weight-home');
         const todayCountEl = document.getElementById('today-count');
 
-        if (totalMaterialsEl) totalMaterialsEl.textContent = totalMaterials;
-        if (totalWeightHomeEl) totalWeightHomeEl.textContent = totalWeight.toFixed(1);
-        if (todayCountEl) todayCountEl.textContent = todayCount;
+        if (totalMaterialsEl) {
+            totalMaterialsEl.textContent = totalMaterials;
+        } else {
+            console.log('[DEBUG] Elemento total-materials não encontrado');
+        }
+        if (totalWeightHomeEl) {
+            totalWeightHomeEl.textContent = totalWeight.toFixed(1);
+        } else {
+            console.log('[DEBUG] Elemento total-weight-home não encontrado');
+        }
+        if (todayCountEl) {
+            todayCountEl.textContent = todayCount;
+        } else {
+            console.log('[DEBUG] Elemento today-count não encontrado');
+        }
     }
 
     // Atualiza lista de itens recentes
@@ -143,13 +187,73 @@ class GreenTechApp {
 
     // Configura event listeners
     setupEventListeners() {
+        console.log('[DEBUG] setupEventListeners chamado');
+        
         // Formulário de adicionar material
         const addForm = document.getElementById('add-material-form');
+        console.log('[DEBUG] addForm encontrado:', addForm);
+        
         if (addForm) {
             addForm.addEventListener('submit', (e) => {
                 e.preventDefault();
+                e.stopPropagation();
+                console.log('[DEBUG] Formulário submetido, prevenindo redirecionamento');
                 this.handleAddMaterial(e);
+                return false;
             });
+            console.log('[DEBUG] Event listener do formulário configurado');
+        } else {
+            console.log('[DEBUG] Formulário add-material-form não encontrado');
+        }
+
+        // Event listener direto no botão de adicionar material
+        const addBtn = document.getElementById('btn-add-material');
+        console.log('[DEBUG] addBtn encontrado:', addBtn);
+        
+        if (addBtn) {
+            addBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('[DEBUG] Botão de adicionar material clicado');
+                
+                // Pega os dados do formulário manualmente
+                const form = document.getElementById('add-material-form');
+                if (form) {
+                    const formData = new FormData(form);
+                    const material = {
+                        tipo: formData.get('tipo'),
+                        quantidade: formData.get('quantidade'),
+                        peso: formData.get('peso'),
+                        descricao: formData.get('descricao')
+                    };
+                    
+                    console.log('[DEBUG] Material extraído do formulário (via botão):', material);
+                    
+                    if (!material.tipo || !material.quantidade) {
+                        alert('Por favor, preencha os campos obrigatórios.');
+                        return;
+                    }
+                    
+                    // Pega latitude/longitude
+                    const latInput = document.getElementById('latitude');
+                    const lngInput = document.getElementById('longitude');
+                    const lat = latInput ? latInput.value : '';
+                    const lng = lngInput ? lngInput.value : '';
+                    
+                    if (lat && lng) {
+                        material.latitude = lat;
+                        material.longitude = lng;
+                        console.log('[DEBUG] Latitude enviada:', lat, 'Longitude enviada:', lng);
+                    }
+                    
+                    // Chama a função de adicionar material
+                    this.handleAddMaterial({ target: form, preventDefault: () => {} });
+                }
+                return false;
+            });
+            console.log('[DEBUG] Event listener do botão configurado');
+        } else {
+            console.log('[DEBUG] Botão btn-add-material não encontrado');
         }
 
         // Input de arquivo
@@ -199,6 +303,7 @@ class GreenTechApp {
 
     // Manipula adição de material
     async handleAddMaterial(e) {
+        console.log('[DEBUG] handleAddMaterial chamado');
         e.preventDefault();
         
         const formData = new FormData(e.target);
@@ -208,6 +313,8 @@ class GreenTechApp {
             peso: formData.get('peso'),
             descricao: formData.get('descricao')
         };
+
+        console.log('[DEBUG] Material extraído do formulário:', material);
 
         if (!material.tipo || !material.quantidade) {
             alert('Por favor, preencha os campos obrigatórios.');
@@ -219,58 +326,45 @@ class GreenTechApp {
         const lngInput = document.getElementById('longitude');
         const lat = latInput ? latInput.value : '';
         const lng = lngInput ? lngInput.value : '';
+        
         if (lat && lng) {
             material.latitude = lat;
             material.longitude = lng;
             console.log('[Cadastro] Latitude enviada:', lat, 'Longitude enviada:', lng);
-            try {
-                await this.addMaterial(material);
-                await this.loadMaterials();
-                // Mostra mensagem de sucesso
-                const successMsg = document.getElementById('success-message');
-                if (successMsg) {
-                    successMsg.style.display = 'flex';
-                    setTimeout(() => {
-                        successMsg.style.display = 'none';
-                    }, 3000);
-                }
-                // Limpa formulário
-                e.target.reset();
-                document.getElementById('file-name').textContent = '';
-            } catch (error) {
-                alert('Erro ao adicionar material. Tente novamente.');
-            }
-            return;
         }
 
-        // Se não houver, tenta obter via geolocalização
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(async (position) => {
-                material.latitude = position.coords.latitude;
-                material.longitude = position.coords.longitude;
-                console.log('[Cadastro] Latitude enviada:', position.coords.latitude, 'Longitude enviada:', position.coords.longitude);
-                try {
-                    await this.addMaterial(material);
-                    await this.loadMaterials();
-                    // Mostra mensagem de sucesso
-                    const successMsg = document.getElementById('success-message');
-                    if (successMsg) {
-                        successMsg.style.display = 'flex';
-                        setTimeout(() => {
-                            successMsg.style.display = 'none';
-                        }, 3000);
-                    }
-                    // Limpa formulário
-                    e.target.reset();
-                    document.getElementById('file-name').textContent = '';
-                } catch (error) {
-                    alert('Erro ao adicionar material. Tente novamente.');
-                }
-            }, (error) => {
-                alert('Não foi possível obter sua localização. O cadastro não foi realizado.');
-            });
-        } else {
-            alert('Geolocalização não suportada neste navegador. O cadastro não foi realizado.');
+        try {
+            console.log('[Cadastro] Material a ser enviado:', material);
+            await this.addMaterial(material);
+            
+            // Recarrega materiais e atualiza estatísticas
+            await this.loadMaterials();
+            this.updateStats();
+            this.updateHomeStats();
+            
+            // Mostra mensagem de sucesso
+            const successMsg = document.getElementById('success-message');
+            if (successMsg) {
+                successMsg.style.display = 'flex';
+                setTimeout(() => {
+                    successMsg.style.display = 'none';
+                }, 3000);
+            }
+            
+            // Limpa formulário
+            e.target.reset();
+            const fileNameEl = document.getElementById('file-name');
+            if (fileNameEl) fileNameEl.textContent = '';
+            
+            // Limpa campos de localização
+            if (latInput) latInput.value = '';
+            if (lngInput) lngInput.value = '';
+            
+            console.log('[Cadastro] Material adicionado com sucesso!');
+            
+        } catch (error) {
+            console.error('[Cadastro] Erro ao adicionar material:', error);
+            alert('Erro ao adicionar material. Tente novamente.');
         }
     }
 
@@ -388,7 +482,7 @@ class GreenTechApp {
             try {
                 const latitude = position.coords.latitude;
                 const longitude = position.coords.longitude;
-                await fetch(`https://iphone-compatible-1.onrender.com/api/catadores/${user.id}/localizacao`, {
+                await fetch(`${BASE_URL}/catadores/${user.id}/localizacao`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -404,6 +498,50 @@ class GreenTechApp {
             alert('Erro ao obter localização: ' + error.message);
         });
     }
+
+    async renderHistoricoColetas() {
+        const user = this.api.getCurrentUser();
+        if (!user || user.perfil !== 'catador') return;
+        const historico = await this.api.getHistoricoColetas(user.id);
+        const container = document.getElementById('historico-coletas');
+        if (!container) return;
+        if (!historico.coletas || historico.coletas.length === 0) {
+            container.innerHTML = '<p style="color:#607d8b;text-align:center;">Nenhuma coleta realizada ainda.</p>';
+            return;
+        }
+        container.innerHTML = historico.coletas.map(item => `
+            <div style="background:#fff;border-radius:10px;padding:14px 18px;margin:10px 0;box-shadow:0 2px 8px rgba(0,0,0,0.04);display:flex;justify-content:space-between;align-items:center;">
+                <div>
+                    <b>${this.getTipoDisplayName(item.tipo)}</b><br>
+                    <small>${item.quantidade || ''}</small>
+                </div>
+                <div style="text-align:right;">
+                    <span style="font-weight:bold;">${item.peso || 0} kg</span><br>
+                    <small>${new Date(item.updated_at || item.created_at).toLocaleDateString('pt-BR')}</small>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    async renderHistoricoDetalhado() {
+        const user = this.api.getCurrentUser();
+        if (!user || user.perfil !== 'catador') return;
+        const historico = await this.api.getHistoricoColetas(user.id);
+        const container = document.getElementById('historico-detalhado');
+        if (!container) return;
+        if (!historico.coletas || historico.coletas.length === 0) {
+            container.innerHTML = '<p style="color:#607d8b;text-align:center;">Nenhuma coleta realizada ainda.</p>';
+            return;
+        }
+        container.innerHTML = historico.coletas.map(item => `
+            <div style="background:#f1f8e9;border-radius:10px;padding:14px 18px;margin:10px 0;box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+                <div><b>${this.getTipoDisplayName(item.tipo)}</b> - ${item.quantidade || ''}</div>
+                <div>Peso: <b>${item.peso || 0} kg</b></div>
+                <div>Data: <b>${new Date(item.updated_at || item.created_at).toLocaleString('pt-BR')}</b></div>
+                <div>Latitude: <b>${item.latitude || '-'}</b> | Longitude: <b>${item.longitude || '-'}</b></div>
+            </div>
+        `).join('');
+    }
 }
 
 // Função para contatar coletor (placeholder)
@@ -415,9 +553,285 @@ function contactCollector(materialId) {
 document.addEventListener('DOMContentLoaded', function() {
     window.GreenTechApp = new GreenTechApp();
     console.log('[DEBUG] GreenTechApp instanciado:', window.GreenTechApp);
+    // Inicializa o app
+    window.GreenTechApp.init();
     // Sobrescrever displaySearchResults na instância criada
     window.GreenTechApp.displaySearchResults = GreenTechApp.prototype.displaySearchResults;
     window.GreenTechApp.performSearch = GreenTechApp.prototype.performSearch;
+    
+    // Event listener global para logout (backup)
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) {
+        console.log('[DEBUG] Configurando event listener global do logout');
+        
+        logoutBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('[DEBUG] Botão de logout clicado (global)');
+            
+            // Confirma logout
+            if (confirm('Tem certeza que deseja sair?')) {
+                // Limpa dados do localStorage
+                localStorage.removeItem('greentech_token');
+                localStorage.removeItem('greentech_user');
+                
+                // Redireciona para login
+                window.location.href = '/login/';
+            }
+            return false;
+        });
+        console.log('[DEBUG] Event listener global do logout configurado');
+    }
+});
+
+// Event listeners para navegação entre páginas
+document.addEventListener('page:init', function(e) {
+    console.log('[DEBUG] page:init disparado para:', e.target.getAttribute('data-name'));
+    
+    // Se estiver na página de adicionar material, configura os event listeners
+    if (e.target.getAttribute('data-name') === 'link2') {
+        console.log('[DEBUG] Configurando event listeners para página link2');
+        
+        // Event listener para o formulário
+        const addForm = document.getElementById('add-material-form');
+        if (addForm) {
+            addForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('[DEBUG] Formulário submetido (page:init)');
+                
+                const formData = new FormData(e.target);
+                const material = {
+                    tipo: formData.get('tipo'),
+                    quantidade: formData.get('quantidade'),
+                    peso: formData.get('peso'),
+                    descricao: formData.get('descricao')
+                };
+                
+                console.log('[DEBUG] Material extraído (page:init):', material);
+                
+                if (!material.tipo || !material.quantidade) {
+                    alert('Por favor, preencha os campos obrigatórios.');
+                    return;
+                }
+                
+                // Pega latitude/longitude
+                const latInput = document.getElementById('latitude');
+                const lngInput = document.getElementById('longitude');
+                const lat = latInput ? latInput.value : '';
+                const lng = lngInput ? lngInput.value : '';
+                
+                if (lat && lng) {
+                    material.latitude = lat;
+                    material.longitude = lng;
+                }
+                
+                // Chama a função de adicionar material
+                if (window.GreenTechApp && window.GreenTechApp.handleAddMaterial) {
+                    window.GreenTechApp.handleAddMaterial({ target: e.target, preventDefault: () => {} });
+                } else {
+                    console.log('[DEBUG] GreenTechApp não disponível, tentando adicionar diretamente');
+                    // Tenta adicionar diretamente via API
+                    if (window.GreenTechAPI) {
+                        window.GreenTechAPI.addMaterial(material).then(response => {
+                            console.log('[DEBUG] Material adicionado via API direta:', response);
+                            alert('Material adicionado com sucesso!');
+                            e.target.reset();
+                        }).catch(error => {
+                            console.error('[DEBUG] Erro ao adicionar material:', error);
+                            alert('Erro ao adicionar material. Tente novamente.');
+                        });
+                    }
+                }
+                return false;
+            });
+            console.log('[DEBUG] Event listener do formulário configurado (page:init)');
+        }
+        
+        // Event listener para o botão
+        const addBtn = document.getElementById('btn-add-material');
+        if (addBtn) {
+            addBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('[DEBUG] Botão clicado (page:init)');
+                
+                const form = document.getElementById('add-material-form');
+                if (form) {
+                    const formData = new FormData(form);
+                    const material = {
+                        tipo: formData.get('tipo'),
+                        quantidade: formData.get('quantidade'),
+                        peso: formData.get('peso'),
+                        descricao: formData.get('descricao')
+                    };
+                    
+                    console.log('[DEBUG] Material extraído do botão (page:init):', material);
+                    
+                    if (!material.tipo || !material.quantidade) {
+                        alert('Por favor, preencha os campos obrigatórios.');
+                        return;
+                    }
+                    
+                    // Pega latitude/longitude
+                    const latInput = document.getElementById('latitude');
+                    const lngInput = document.getElementById('longitude');
+                    const lat = latInput ? latInput.value : '';
+                    const lng = lngInput ? lngInput.value : '';
+                    
+                    if (lat && lng) {
+                        material.latitude = lat;
+                        material.longitude = lng;
+                    }
+                    
+                    // Chama a função de adicionar material
+                    if (window.GreenTechApp && window.GreenTechApp.handleAddMaterial) {
+                        window.GreenTechApp.handleAddMaterial({ target: form, preventDefault: () => {} });
+                    } else {
+                        console.log('[DEBUG] GreenTechApp não disponível, tentando adicionar diretamente');
+                        // Tenta adicionar diretamente via API
+                        if (window.GreenTechAPI) {
+                            window.GreenTechAPI.addMaterial(material).then(response => {
+                                console.log('[DEBUG] Material adicionado via API direta:', response);
+                                alert('Material adicionado com sucesso!');
+                                form.reset();
+                            }).catch(error => {
+                                console.error('[DEBUG] Erro ao adicionar material:', error);
+                                alert('Erro ao adicionar material. Tente novamente.');
+                            });
+                        }
+                    }
+                }
+                return false;
+            });
+            console.log('[DEBUG] Event listener do botão configurado (page:init)');
+        }
+    }
+    
+    // Configura event listener do logout para todas as páginas
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) {
+        console.log('[DEBUG] Configurando event listener do logout (page:init)');
+        
+        logoutBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('[DEBUG] Botão de logout clicado (page:init)');
+            
+            // Confirma logout
+            if (confirm('Tem certeza que deseja sair?')) {
+                // Limpa dados do localStorage
+                localStorage.removeItem('greentech_token');
+                localStorage.removeItem('greentech_user');
+                
+                // Redireciona para login
+                window.location.href = '/login/';
+            }
+            return false;
+        });
+        console.log('[DEBUG] Event listener do logout configurado (page:init)');
+    }
+});
+
+// Event listener adicional para page:afterin (quando a página termina de carregar)
+document.addEventListener('page:afterin', function(e) {
+    console.log('[DEBUG] page:afterin disparado para:', e.target.getAttribute('data-name'));
+    
+    // Se estiver na página de adicionar material, configura os event listeners novamente
+    if (e.target.getAttribute('data-name') === 'link2') {
+        console.log('[DEBUG] Configurando event listeners para página link2 (page:afterin)');
+        
+        // Event listener para o botão (backup)
+        const addBtn = document.getElementById('btn-add-material');
+        if (addBtn) {
+            // Remove event listeners anteriores para evitar duplicação
+            addBtn.replaceWith(addBtn.cloneNode(true));
+            const newAddBtn = document.getElementById('btn-add-material');
+            
+            newAddBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('[DEBUG] Botão clicado (page:afterin)');
+                
+                const form = document.getElementById('add-material-form');
+                if (form) {
+                    const formData = new FormData(form);
+                    const material = {
+                        tipo: formData.get('tipo'),
+                        quantidade: formData.get('quantidade'),
+                        peso: formData.get('peso'),
+                        descricao: formData.get('descricao')
+                    };
+                    
+                    console.log('[DEBUG] Material extraído do botão (page:afterin):', material);
+                    
+                    if (!material.tipo || !material.quantidade) {
+                        alert('Por favor, preencha os campos obrigatórios.');
+                        return;
+                    }
+                    
+                    // Pega latitude/longitude
+                    const latInput = document.getElementById('latitude');
+                    const lngInput = document.getElementById('longitude');
+                    const lat = latInput ? latInput.value : '';
+                    const lng = lngInput ? lngInput.value : '';
+                    
+                    if (lat && lng) {
+                        material.latitude = lat;
+                        material.longitude = lng;
+                    }
+                    
+                    // Chama a função de adicionar material
+                    if (window.GreenTechApp && window.GreenTechApp.handleAddMaterial) {
+                        window.GreenTechApp.handleAddMaterial({ target: form, preventDefault: () => {} });
+                    } else {
+                        console.log('[DEBUG] GreenTechApp não disponível, tentando adicionar diretamente');
+                        // Tenta adicionar diretamente via API
+                        if (window.GreenTechAPI) {
+                            window.GreenTechAPI.addMaterial(material).then(response => {
+                                console.log('[DEBUG] Material adicionado via API direta:', response);
+                                alert('Material adicionado com sucesso!');
+                                form.reset();
+                            }).catch(error => {
+                                console.error('[DEBUG] Erro ao adicionar material:', error);
+                                alert('Erro ao adicionar material. Tente novamente.');
+                            });
+                        }
+                    }
+                }
+                return false;
+            });
+            console.log('[DEBUG] Event listener do botão configurado (page:afterin)');
+        }
+    }
+    
+    // Configura event listener do logout para todas as páginas
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) {
+        console.log('[DEBUG] Configurando event listener do logout (page:afterin)');
+        
+        // Remove event listeners anteriores para evitar duplicação
+        logoutBtn.replaceWith(logoutBtn.cloneNode(true));
+        const newLogoutBtn = document.getElementById('logout-btn');
+        
+        newLogoutBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('[DEBUG] Botão de logout clicado');
+            
+            // Confirma logout
+            if (confirm('Tem certeza que deseja sair?')) {
+                // Limpa dados do localStorage
+                localStorage.removeItem('greentech_token');
+                localStorage.removeItem('greentech_user');
+                
+                // Redireciona para login
+                window.location.href = '/login/';
+            }
+            return false;
+        });
+        console.log('[DEBUG] Event listener do logout configurado (page:afterin)');
+    }
 });
 
 // Para compatibilidade com Cordova
@@ -442,6 +856,10 @@ function calcularDistanciaKm(lat1, lon1, lat2, lon2) {
 
 // Função para inicializar e atualizar o mapa
 window.initGreenTechMap = function(userLat, userLng) {
+    // Antes de criar o mapa, remova todos os outros mapas duplicados
+    document.querySelectorAll('#map').forEach((el, idx) => {
+        if (idx > 0) el.parentNode && el.parentNode.removeChild(el);
+    });
     if (window._greentech_map) {
         window._greentech_map.remove();
         window._greentech_map = null;
@@ -458,7 +876,7 @@ window.initGreenTechMap = function(userLat, userLng) {
     document.getElementById('map-message').style.display = 'none';
     // Filtro de distância
     const filtro = parseFloat(document.getElementById('distance-filter').value);
-    fetch('https://iphone-compatible-1.onrender.com/api/catadores')
+    fetch(`${BASE_URL}/catadores`)
         .then(res => res.json())
         .then(data => {
             document.getElementById('map-loading').style.display = 'none';
@@ -696,6 +1114,14 @@ window.addEventListener('DOMContentLoaded', function() {
 
 // Melhorar ícone flutuante de atualização de localização
 window.addEventListener('DOMContentLoaded', function() {
+    const user = window.GreenTechAPI.getCurrentUser();
+    
+    // Só manipula FABs se for catador
+    if (!user || user.perfil !== 'catador') {
+        console.log('[DEBUG] Não é catador, não manipular FABs de localização');
+        return;
+    }
+    
     const btn = document.getElementById('btn-update-location-fab');
     if (btn) {
         btn.onclick = () => {
@@ -706,7 +1132,7 @@ window.addEventListener('DOMContentLoaded', function() {
                     return;
                 }
                 navigator.geolocation.getCurrentPosition(function(pos) {
-                    fetch(`https://iphone-compatible-1.onrender.com/api/catadores/${user.id}/localizacao`, {
+                    fetch(`${BASE_URL}/catadores/${user.id}/localizacao`, {
                         method: 'PUT',
                         headers: {
                             'Content-Type': 'application/json',
@@ -752,7 +1178,7 @@ window.addEventListener('DOMContentLoaded', function() {
         btnRemover.onclick = () => {
             const user = window.GreenTechAPI.getCurrentUser && window.GreenTechAPI.getCurrentUser();
             if (user && user.perfil === 'catador') {
-                fetch(`https://iphone-compatible-1.onrender.com/api/catadores/${user.id}/localizacao`, {
+                fetch(`${BASE_URL}/catadores/${user.id}/localizacao`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -806,29 +1232,139 @@ window.updateCatadorLocation = function(lat, lng) {
 // Garante o registro do event listener mesmo em SPAs/Framework7
 
 document.addEventListener('page:init', function (e) {
-    console.log('[DEBUG] page:init disparado para:', e.target?.getAttribute('data-name'));
-    
-    // Montar React em todas as páginas que tenham o container materiais-lista
-    const materiaisLista = document.getElementById('materiais-lista');
-    if (materiaisLista) {
-        console.log('[DEBUG] Container materiais-lista encontrado, montando React...');
-        // Pequeno delay para garantir que o DOM está pronto
-        setTimeout(() => {
-            if (window.mountReact) {
-                window.mountReact();
-            } else {
-                console.log('[DEBUG] Função mountReact não encontrada');
-            }
-        }, 100);
+    const page = e.target;
+    const pageName = page && page.getAttribute('data-name');
+    if (pageName === 'index') {
+        // 1. Limpa elementos dinâmicos que não pertencem à index
+        document.querySelectorAll('.material-item, .no-results').forEach(el => el && el.remove());
+
+        // 2. Reseta o mapa se necessário
+        if (window._greentech_map) {
+            window._greentech_map.remove();
+            window._greentech_map = null;
+        }
+        // 3. Recria o mapa
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(function(position) {
+                window._greentech_userLat = position.coords.latitude;
+                window._greentech_userLng = position.coords.longitude;
+                window.initGreenTechMap(window._greentech_userLat, window._greentech_userLng);
+            }, function(error) {
+                window._greentech_userLat = -25.4284;
+                window._greentech_userLng = -49.2733;
+                window.initGreenTechMap(window._greentech_userLat, window._greentech_userLng);
+            });
+        }
+
+        // 4. Garante que só os elementos da index estejam visíveis
+        [
+            '#catador-dashboard', '#catador-only-painel', '.dashboard-card', '.quick-stats',
+            '.welcome-section', '.welcome-card', '.toolbar', '.top-nav', '.page-content'
+        ].forEach(sel => {
+            document.querySelectorAll(sel).forEach(el => el && (el.style.display = ''));
+        });
+
+        // 5. Força atualização dos dados da home
+        if (window.GreenTechApp && window.GreenTechApp.loadMaterials && window.GreenTechApp.updateStats && window.GreenTechApp.updateHomeStats) {
+            window.GreenTechApp.loadMaterials().then(() => {
+                window.GreenTechApp.updateStats();
+                window.GreenTechApp.updateHomeStats();
+            });
+        }
+        // Exibe/oculta elementos conforme o perfil
+        const user = window.GreenTechAPI && window.GreenTechAPI.getCurrentUser && window.GreenTechAPI.getCurrentUser();
+        const fab = document.getElementById('catador-only-fab');
+        const painel = document.getElementById('catador-only-painel');
+        const quickStats = document.querySelector('.quick-stats');
+        const filtroRaio = document.getElementById('filtro-raio-container');
+        const welcomeSection = document.querySelector('.welcome-section');
+
+        if (user && user.perfil === 'catador') {
+            if (fab) fab.style.display = 'block';
+            if (painel) painel.style.display = 'block';
+            if (quickStats) quickStats.style.display = 'none';
+            if (filtroRaio) filtroRaio.style.display = 'none';
+            if (welcomeSection) welcomeSection.style.display = '';
+        } else {
+            if (fab) fab.style.display = 'none';
+            if (painel) painel.style.display = 'none';
+            if (quickStats) quickStats.style.display = '';
+            if (filtroRaio) filtroRaio.style.display = '';
+            if (welcomeSection) welcomeSection.style.display = '';
+        }
+
+        // Reatribui listeners dos FABs apenas se for catador
+        if (user && user.perfil === 'catador' && fab && fab.style.display === 'block') {
+            const btnUpdate = document.getElementById('btn-update-location-fab');
+            const btnReativar = document.getElementById('btn-reativar-location-fab');
+            const btnRemove = document.getElementById('btn-remove-location-fab');
+            
+            if (btnUpdate) btnUpdate.onclick = function() {
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(function(pos) {
+                        window.updateCatadorLocation && window.updateCatadorLocation(pos.coords.latitude, pos.coords.longitude);
+                    }, function(err) {
+                        alert('Não foi possível obter localização: ' + err.message);
+                    });
+                } else {
+                    alert('Geolocalização não suportada.');
+                }
+            };
+            if (btnReativar) btnReativar.onclick = function() { 
+                window.reativarLocalizacaoCatador && window.reativarLocalizacaoCatador(user.id); 
+            };
+            if (btnRemove) btnRemove.onclick = function() { 
+                // Lógica de remover localização
+                if (user && user.perfil === 'catador') {
+                    fetch(`${BASE_URL}/catadores/${user.id}/localizacao`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${window.GreenTechAPI.token}`
+                        },
+                        body: JSON.stringify({ latitude: null, longitude: null })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            showFeedback('Localização removida com sucesso!', 'success');
+                        } else {
+                            showFeedback('Erro ao remover localização.', 'error');
+                        }
+                    })
+                    .catch(() => showFeedback('Erro ao remover localização.', 'error'));
+                }
+            };
+        }
+        // Espaçamento visual entre welcome-section e FABs
+        if (welcomeSection) welcomeSection.style.marginBottom = '24px';
+        if (fab) fab.style.marginTop = '16px';
     }
-    
-    // Só registra o listener se estiver na página de adicionar material
-    if (e.target && e.target.getAttribute('data-name') === 'link2') {
-        const addForm = document.getElementById('add-material-form');
-        if (addForm) {
-            addForm.addEventListener('submit', (ev) => {
-                ev.preventDefault();
-                window.GreenTechApp.handleAddMaterial(ev);
+});
+
+document.addEventListener('page:afterin', function (e) {
+    const page = e.target;
+    const pageName = page && page.getAttribute('data-name');
+    if (pageName === 'index') {
+        // Atualização automática ao voltar para a home
+        if (window.GreenTechApp && window.GreenTechApp.loadMaterials && window.GreenTechApp.updateStats && window.GreenTechApp.updateHomeStats) {
+            window.GreenTechApp.loadMaterials().then(() => {
+                window.GreenTechApp.updateStats();
+                window.GreenTechApp.updateHomeStats();
+            });
+        }
+    }
+});
+
+document.addEventListener('page:beforein', function (e) {
+    const page = e.target;
+    const pageName = page && page.getAttribute('data-name');
+    if (pageName === 'index') {
+        // Atualiza tudo antes da index aparecer
+        if (window.GreenTechApp && window.GreenTechApp.loadMaterials && window.GreenTechApp.updateStats && window.GreenTechApp.updateHomeStats) {
+            window.GreenTechApp.loadMaterials().then(() => {
+                window.GreenTechApp.updateStats();
+                window.GreenTechApp.updateHomeStats();
             });
         }
     }
@@ -841,7 +1377,7 @@ window.reativarLocalizacaoCatador = function(catadorId) {
         return;
     }
     navigator.geolocation.getCurrentPosition(function(pos) {
-        fetch(`https://iphone-compatible-1.onrender.com/api/catadores/${catadorId}/localizacao`, {
+        fetch(`${BASE_URL}/catadores/${catadorId}/localizacao`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
@@ -990,12 +1526,12 @@ window.aceitarMaterial = async function(materialId) {
 }
 
 window.coletarMaterial = async function(materialId) {
-    console.log('[DEBUG] coletarMaterial chamado para materialId:', materialId);
     const user = window.GreenTechAPI.getCurrentUser();
-    if (!user || user.perfil !== 'catador') return;
+    if (!user || user.perfil !== 'catador') {
+        return;
+    }
     try {
         const apiUrl = window.GreenTechAPI.baseURL + `/materials/${materialId}/coletar`;
-        console.log('[DEBUG] Fazendo requisição PUT para:', apiUrl);
         const response = await fetch(apiUrl, {
             method: 'PUT',
             headers: {
@@ -1003,11 +1539,7 @@ window.coletarMaterial = async function(materialId) {
                 'Authorization': `Bearer ${window.GreenTechAPI.token}`
             }
         });
-        console.log('[DEBUG] Resposta da requisição:', response);
         if (!response.ok) {
-            let data = {};
-            try { data = await response.json(); } catch(e){}
-            console.log('[DEBUG] Erro ao coletar material:', data);
             return;
         }
         // Após coletar, atualizar a busca na página link3.html com delay
@@ -1015,14 +1547,18 @@ window.coletarMaterial = async function(materialId) {
         const filterBtn = document.querySelector('.filter-btn.active');
         const query = searchInput ? searchInput.value : '';
         const filter = filterBtn ? filterBtn.dataset.filter : 'all';
-        setTimeout(() => {
-            console.log('[DEBUG] Chamando performSearch após coletar:', query, filter);
+        setTimeout(async () => {
             if (window.GreenTechApp && window.GreenTechApp.performSearch) {
                 window.GreenTechApp.performSearch(query, filter);
             }
+            // Atualizar painel de coleta do dia
+            if (window.GreenTechApp && window.GreenTechApp.loadMaterials && window.GreenTechApp.updateStats) {
+                await window.GreenTechApp.loadMaterials();
+                window.GreenTechApp.updateStats();
+            }
         }, 700);
     } catch (e) {
-        console.error('[DEBUG] Erro inesperado em coletarMaterial:', e);
+        // erro silencioso
     }
 } 
 
@@ -1046,3 +1582,94 @@ document.addEventListener('click', function(e) {
         }
     }
 }); 
+
+// Função para forçar atualização manual
+window.forceUpdateStats = async function() {
+  if (window.GreenTechApp && window.GreenTechApp.loadMaterials && window.GreenTechApp.updateStats) {
+    await window.GreenTechApp.loadMaterials();
+    window.GreenTechApp.updateStats();
+    alert('Dados atualizados!');
+  }
+}; 
+
+// --- INÍCIO: Exibição de blocos exclusivos para catador na página de dados (link4) ---
+function getUserPerfilDireto() {
+  try {
+    const userStr = localStorage.getItem('greentech_user');
+    console.log('[DEBUG] localStorage.getItem:', userStr);
+    if (!userStr) return null;
+    const user = JSON.parse(userStr);
+    console.log('[DEBUG] user parseado:', user);
+    return user && user.perfil ? user.perfil : null;
+  } catch (e) { console.log('[DEBUG] Erro ao parsear user:', e); return null; }
+}
+function mostrarBlocosSeCatadorTentativas(tentativas = 0) {
+  var perfil = getUserPerfilDireto();
+  console.log('[DEBUG] mostrarBlocosSeCatadorTentativas tentativa', tentativas, '| perfil:', perfil);
+  
+  // Se não é catador, não tenta mostrar os blocos
+  if (perfil !== 'catador') {
+    console.log('[DEBUG] Não é catador, não mostrar blocos especiais');
+    return;
+  }
+  
+  var totalDiv = document.getElementById('catador-total');
+  var histBtn = document.getElementById('catador-historico-btn');
+  console.log('[DEBUG] totalDiv:', totalDiv, '| histBtn:', histBtn);
+  
+  if (totalDiv && histBtn) {
+    totalDiv.style.display = ''; 
+    console.log('[DEBUG] Exibindo totalDiv');
+    histBtn.style.display = ''; 
+    console.log('[DEBUG] Exibindo histBtn');
+  } else if (tentativas < 5) {
+    setTimeout(function() { mostrarBlocosSeCatadorTentativas(tentativas + 1); }, 200);
+  } else {
+    console.log('[DEBUG] Elementos não encontrados após 5 tentativas');
+  }
+}
+document.addEventListener('DOMContentLoaded', function() {
+  console.log('[DEBUG] DOMContentLoaded disparado (app.js)');
+  setTimeout(function() {
+    // Só chama mostrarBlocosSeCatadorTentativas se estiver na página de dados
+    if (window.location.pathname === '/link4/' || window.location.pathname === '/link4') {
+      mostrarBlocosSeCatadorTentativas();
+    }
+    var perfil = getUserPerfilDireto();
+    console.log('[DEBUG] perfil no DOMContentLoaded (app.js):', perfil);
+    if (perfil === 'catador') {
+      const userStr = localStorage.getItem('greentech_user');
+      const user = userStr ? JSON.parse(userStr) : null;
+      if (user && user.id) {
+        fetch(`${BASE_URL}/materials?catador_id=${user.id}&hoje=1`)
+          .then(res => res.json())
+          .then(data => {
+            let total = 0;
+            (data.materials || []).forEach(m => {
+              if (m.peso) total += parseFloat(m.peso);
+            });
+            var kgHoje = document.getElementById('catador-kg-hoje');
+            if (kgHoje) {
+              kgHoje.textContent = total.toFixed(1);
+              console.log('[DEBUG] Atualizou kgHoje:', total);
+            } else {
+              console.log('[DEBUG] Elemento catador-kg-hoje não encontrado');
+            }
+          });
+      }
+    }
+  }, 300);
+});
+document.addEventListener('page:init', function(e) {
+  console.log('[DEBUG] page:init disparado (app.js)', e);
+  if (e.target && e.target.getAttribute('data-name') === 'link4') {
+    setTimeout(mostrarBlocosSeCatadorTentativas, 100);
+  }
+});
+document.addEventListener('page:afterin', function(e) {
+  console.log('[DEBUG] page:afterin disparado (app.js)', e);
+  if (e.target && e.target.getAttribute('data-name') === 'link4') {
+    setTimeout(mostrarBlocosSeCatadorTentativas, 100);
+  }
+});
+// --- FIM: Exibição de blocos exclusivos para catador na página de dados (link4) --- 

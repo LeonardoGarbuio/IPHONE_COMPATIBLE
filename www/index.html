@@ -252,6 +252,14 @@
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   
   <script>
+    // DEBUG: Log visual ao entrar na index
+    document.addEventListener('page:init', function(e) {
+      if (e.target && e.target.getAttribute('data-name') === 'index') {
+        console.log('[DEBUG] Entrou na index, DOM:', document.body.innerHTML);
+        // Remover o script de debug que exibe o alerta 'Entrou na index!'
+      }
+    });
+
     // Define initMap no escopo global para ser chamada pelo callback da API
     window.initMap = function() {
       var mapElement = document.getElementById('map');
@@ -375,20 +383,31 @@
     window.addEventListener('DOMContentLoaded', function() {
       const user = window.GreenTechAPI.getCurrentUser();
       if (user && user.perfil === 'catador') {
-        document.getElementById('catador-dashboard').style.display = 'block';
-        // Esconde dashboard padrão
-        document.querySelectorAll('.main-dashboard, .main-content, .main-header').forEach(e => e && (e.style.display = 'none'));
+        const catadorDashboard = document.getElementById('catador-dashboard');
+        if (catadorDashboard) {
+          catadorDashboard.style.display = 'block';
+          // Esconde dashboard padrão
+          document.querySelectorAll('.main-dashboard, .main-content, .main-header').forEach(e => e && (e.style.display = 'none'));
+        }
       }
     });
 
     // Lógica do FAB único de localização
     window.addEventListener('DOMContentLoaded', function() {
+      const user = window.GreenTechAPI.getCurrentUser();
+      
+      // Só tenta manipular os FABs se for catador
+      if (!user || user.perfil !== 'catador') {
+        console.log('[DEBUG] Não é catador, não manipular FABs de localização');
+        return;
+      }
+      
       const btn = document.getElementById('btn-location-fab');
       const icon = document.getElementById('fab-icon');
       
       // Verificar se os elementos existem antes de tentar definir onclick
       if (!btn || !icon) {
-        console.log('[DEBUG] Elementos btn-location-fab ou fab-icon não encontrados');
+        console.log('[DEBUG] Elementos btn-location-fab ou fab-icon não encontrados (normal para geradores)');
         return;
       }
       
@@ -451,8 +470,11 @@
               (data.materials || []).forEach(m => {
                 if (m.peso) total += parseFloat(m.peso);
               });
-              if (document.getElementById('catador-kg-hoje')) {
-                document.getElementById('catador-kg-hoje').textContent = total.toFixed(1);
+              const kgHojeEl = document.getElementById('catador-kg-hoje');
+              if (kgHojeEl) {
+                kgHojeEl.textContent = total.toFixed(1);
+              } else {
+                console.log('[DEBUG] Elemento catador-kg-hoje não encontrado (normal para geradores)');
               }
             });
         } else {
@@ -520,7 +542,6 @@
           let dadosPage = document.querySelector('div[data-name="index"].page.color-theme-blue');
           if (!dadosPage) dadosPage = document.querySelector('.page-content');
           if (dadosPage) {
-            dadosPage.innerHTML = '';
             // Adiciona blocos de ranking e histórico
             const rankingDiv = document.createElement('div');
             rankingDiv.style = 'background:#e8f5e9;border-radius:16px;padding:32px;margin:32px auto 18px auto;max-width:600px;text-align:center;font-size:1.3rem;color:#388e3c;font-weight:600;box-shadow:0 2px 12px rgba(76,175,80,0.08)';

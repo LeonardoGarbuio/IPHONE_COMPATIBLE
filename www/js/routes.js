@@ -7,10 +7,9 @@ if (window.cordova) {
 }
 
 // Configuração da API
-const API_BASE_URL =
-  window.location.hostname === "localhost"
-    ? "http://localhost:3000/api"
-    : "https://iphone-compatible-1.onrender.com/api";
+const BASE_URL = (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
+  ? "http://localhost:3000/api"
+  : "https://iphone-compatible-1.onrender.com/api";
 
 // Gerenciamento de autenticação
 let currentUser = null;
@@ -176,6 +175,23 @@ var app = new Framework7({
             window.GreenTechApp.loadMaterials().then(() => {
               window.GreenTechApp.updateStats();
             });
+          }
+        },
+        pageAfterIn: function (event, page) {},
+        pageInit: function (event, page) {},
+        pageBeforeRemove: function (event, page) {},
+      },
+    },
+    {
+      path: '/historico/',
+      url: '/historico.html',
+      animate: false,
+      on: {
+        pageBeforeIn: function (event, page) {
+          if (!forceAuth(page, app.views.main.router)) return;
+          // Carregar histórico detalhado se necessário
+          if (window.GreenTechApp && window.GreenTechApp.renderHistoricoDetalhado) {
+            window.GreenTechApp.renderHistoricoDetalhado();
           }
         },
         pageAfterIn: function (event, page) {},

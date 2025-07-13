@@ -1,8 +1,8 @@
 // Cliente API para integração com o backend GreenTech
 class GreenTechAPI {
     constructor() {
-        this.baseURL =
-          window.location.hostname === "localhost"
+        // Usa localhost em dev, Render em produção
+        this.baseURL = (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
             ? "http://localhost:3000/api"
             : "https://iphone-compatible-1.onrender.com/api";
         this.token = localStorage.getItem('greentech_token');
@@ -111,8 +111,17 @@ class GreenTechAPI {
     }
 
     // Estatísticas
-    async getStats() {
-        return await this.request('/materials/stats');
+    async getStats(params = {}) {
+        let query = '';
+        if (params.catador_id) {
+            query = `?catador_id=${params.catador_id}`;
+        }
+        return await this.request(`/materials/stats${query}`);
+    }
+
+    // Histórico de coletas do catador
+    async getHistoricoColetas(catador_id) {
+        return await this.request(`/materials/historico/coletas?catador_id=${catador_id}`);
     }
 
     // Upload de imagem

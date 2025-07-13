@@ -14,13 +14,13 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Servir arquivos estáticos (para o app)
-app.use(express.static(path.join(__dirname, '../www')));
-
 // Rotas da API
 app.use('/api/auth', authRoutes);
 app.use('/api/materials', materialsRoutes);
 app.use('/api', authRoutes);
+
+// Servir arquivos estáticos (para o app)
+app.use(express.static(path.join(__dirname, '../www')));
 
 // Rota para verificar se a API está funcionando
 app.get('/api/health', (req, res) => {
@@ -57,8 +57,8 @@ app.get('/link4/', (req, res) => {
 });
 
 // Fallback SPA para rotas não-API e não-arquivo estático
-app.get(/^\/(index|link2|link3|link4)\/?$/, (req, res) => {
-  res.sendFile(path.join(__dirname, `../www/${req.params[0]}.html`));
+app.get(/^\/(?!api).*/, (req, res) => {
+  res.sendFile(path.join(__dirname, '../www/index.html'));
 });
 app.get('*', (req, res) => {
   // Se não for API nem arquivo estático, serve index.html

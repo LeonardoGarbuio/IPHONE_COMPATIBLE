@@ -31,30 +31,46 @@ const authenticateToken = (req, res, next) => {
 // GET /api/materials/stats - Estatísticas dos materiais
 router.get('/stats', (req, res) => {
   try {
-    // Estatísticas gerais
-    const statsQuery = `
+    const catadorId = req.query.catador_id;
+    let statsQuery = `
       SELECT 
         COUNT(*) as totalItems,
         SUM(CAST(peso AS REAL)) as totalWeight,
         COUNT(CASE WHEN DATE(created_at) = DATE('now') THEN 1 END) as todayItems,
         COUNT(CASE WHEN DATE(created_at) >= DATE('now', 'start of month') THEN 1 END) as monthItems
       FROM materials
-    `;
-
-    db.get(statsQuery, [], (err, stats) => {
+      WHERE status = 'coletado'`;
+    const params = [];
+    if (catadorId) {
+      statsQuery += ' AND catador_id = ?';
+      params.push(catadorId);
+    }
+    // Soma do peso só dos itens coletados hoje
+    let todayWeightQuery = `SELECT SUM(CAST(peso AS REAL)) as todayItemsWeight FROM materials WHERE status = 'coletado' AND DATE(created_at) = DATE('now')`;
+    const todayParams = [];
+    if (catadorId) {
+      todayWeightQuery += ' AND catador_id = ?';
+      todayParams.push(catadorId);
+    }
+    db.get(statsQuery, params, (err, stats) => {
       if (err) {
         console.error('Erro ao buscar estatísticas:', err);
         return res.status(500).json({ error: 'Erro interno do servidor' });
       }
-
-      res.json({
-        totalItems: stats.totalItems || 0,
-        totalWeight: stats.totalWeight || 0,
-        todayItems: stats.todayItems || 0,
-        monthItems: stats.monthItems || 0
+      db.get(todayWeightQuery, todayParams, (err2, todayStats) => {
+        if (err2) {
+          console.error('Erro ao buscar peso do dia:', err2);
+          return res.status(500).json({ error: 'Erro interno do servidor' });
+        }
+        res.json({
+          totalItems: stats.totalItems || 0,
+          totalWeight: stats.totalWeight || 0,
+          todayItems: stats.todayItems || 0,
+          monthItems: stats.monthItems || 0,
+          todayItemsWeight: todayStats && todayStats.todayItemsWeight ? todayStats.todayItemsWeight : 0
+        });
       });
     });
-
   } catch (error) {
     console.error('Erro ao buscar estatísticas:', error);
     res.status(500).json({ error: 'Erro interno do servidor' });
@@ -233,12 +249,20 @@ router.get('/:id', (req, res) => {
   }
 });
 
-// GET /api/materials?user_id=ID
+// GET /api/materials?user_id=ID&perfil=catador|gerador
 router.get('/', (req, res) => {
   const userId = req.query.user_id;
+  const perfil = req.query.perfil; // Recebe o perfil do usuário
   let sql = 'SELECT * FROM materials';
   let params = [];
-  if (userId) {
+  if (userId && perfil === 'catador') {
+    // Mostra materiais reservados/coletados pelo catador OU disponíveis para coleta
+    sql += ' WHERE (catador_id = ? OR status = "disponivel")';
+    params.push(userId);
+  } else if (userId && perfil === 'gerador') {
+    sql += ' WHERE user_id = ?';
+    params.push(userId);
+  } else if (userId) {
     sql += ' WHERE user_id = ?';
     params.push(userId);
   }
@@ -247,6 +271,34 @@ router.get('/', (req, res) => {
       return res.status(500).json({ error: 'Erro ao buscar materiais' });
     }
     res.json({ materials: rows });
+  });
+});
+
+// Endpoint de debug para listar todos os materiais
+router.get('/debug/all-materials', (req, res) => {
+  const query = 'SELECT * FROM materials';
+  db.all(query, [], (err, rows) => {
+    if (err) {
+      console.error('[DEBUG] Erro ao buscar todos os materiais:', err);
+      return res.status(500).json({ error: 'Erro ao buscar materiais' });
+    }
+    res.json({ materials: rows });
+  });
+});
+
+// Endpoint para histórico de coletas do catador
+router.get('/historico/coletas', (req, res) => {
+  const catadorId = req.query.catador_id;
+  if (!catadorId) {
+    return res.status(400).json({ error: 'catador_id é obrigatório' });
+  }
+  const query = `SELECT * FROM materials WHERE status = 'coletado' AND catador_id = ? ORDER BY created_at DESC`;
+  db.all(query, [catadorId], (err, rows) => {
+    if (err) {
+      console.error('[HISTORICO] Erro ao buscar coletas:', err);
+      return res.status(500).json({ error: 'Erro ao buscar histórico de coletas' });
+    }
+    res.json({ coletas: rows });
   });
 });
 
@@ -267,12 +319,13 @@ router.post('/', authenticateToken, (req, res) => {
       });
     }
 
+    // Adicione o campo status no insert
     const query = `
-      INSERT INTO materials (user_id, tipo, quantidade, peso, descricao, imagem, latitude, longitude)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO materials (user_id, tipo, quantidade, peso, descricao, imagem, latitude, longitude, status)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
-    db.run(query, [user_id, tipo, quantidade, peso, descricao, imagem, latitude, longitude], function(err) {
+    db.run(query, [user_id, tipo, quantidade, peso, descricao, imagem, latitude, longitude, 'disponivel'], function(err) {
       if (err) {
         console.error('Erro ao criar material:', err);
         return res.status(500).json({ error: 'Erro interno do servidor' });
@@ -411,12 +464,22 @@ router.put('/:id/reservar', authenticateToken, (req, res) => {
       console.warn('[RESERVAR] Material não disponível:', material.status);
       return res.status(400).json({ error: 'Material já reservado ou coletado' });
     }
-    db.run('UPDATE materials SET status = ?, catador_id = ? WHERE id = ?', ['reservado', catadorId, id], function (err) {
+    // Atualiza status e catador_id mesmo que já estejam preenchidos
+    db.run('UPDATE materials SET status = ?, catador_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', ['reservado', catadorId, id], function (err) {
       if (err) {
         console.error('[RESERVAR] Erro ao atualizar material:', err);
         return res.status(500).json({ error: 'Erro ao reservar material' });
       }
-      res.json({ success: true });
+      console.log('[RESERVAR] Material reservado com sucesso! Status e catador_id atualizados.');
+      // Buscar material atualizado para debug
+      db.get('SELECT * FROM materials WHERE id = ?', [id], (err, updatedMaterial) => {
+        if (err) {
+          console.error('[RESERVAR] Erro ao buscar material atualizado:', err);
+          return res.status(500).json({ error: 'Erro ao buscar material atualizado' });
+        }
+        console.log('[RESERVAR] Material atualizado:', updatedMaterial);
+        res.json({ success: true, material: updatedMaterial });
+      });
     });
   });
 });
@@ -425,14 +488,23 @@ router.put('/:id/reservar', authenticateToken, (req, res) => {
 router.put('/:id/coletar', authenticateToken, (req, res) => {
   const { id } = req.params;
   const catadorId = req.user.id;
+  console.log('[COLETAR] Requisição recebida para material id:', id, '| catadorId:', catadorId);
   db.get('SELECT * FROM materials WHERE id = ?', [id], (err, material) => {
-    if (err || !material) return res.status(404).json({ error: 'Material não encontrado' });
+    if (err || !material) {
+      console.log('[COLETAR] Material não encontrado ou erro:', err);
+      return res.status(404).json({ error: 'Material não encontrado' });
+    }
+    console.log('[COLETAR] Material encontrado:', material);
     if (material.status !== 'reservado' || material.catador_id !== catadorId) {
+      console.log('[COLETAR] Permissão negada. Status:', material.status, '| catador_id:', material.catador_id, '| catadorId:', catadorId);
       return res.status(400).json({ error: 'Você não pode coletar este material' });
     }
-    // Ao invés de atualizar status, deleta o material
-    db.run('DELETE FROM materials WHERE id = ?', [id], function (err) {
-      if (err) return res.status(500).json({ error: 'Erro ao remover material após coleta' });
+    db.run('UPDATE materials SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', ['coletado', id], function (err) {
+      if (err) {
+        console.log('[COLETAR] Erro ao marcar como coletado:', err);
+        return res.status(500).json({ error: 'Erro ao marcar como coletado' });
+      }
+      console.log('[COLETAR] Material marcado como coletado com sucesso!');
       res.json({ success: true });
     });
   });
