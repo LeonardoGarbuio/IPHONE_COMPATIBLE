@@ -264,9 +264,9 @@
   <script>
     // Configuração da API
     const API_BASE_URL =
-      window.location.hostname === "localhost"
+      window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
         ? "http://localhost:3000/api"
-        : "http://localhost:3000/api";
+        : "https://iphone-compatible-1.onrender.com/api";
     
     // Gerenciamento de estado
     let currentUser = null;
