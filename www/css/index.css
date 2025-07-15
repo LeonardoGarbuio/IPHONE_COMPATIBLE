@@ -1,0 +1,792 @@
+:root{
+    --branco: #e3e1e1;
+    --verde: #4CAF50;
+    --verde-claro: #A5D6A7;
+    --branquin: #ffff;
+    --branco2: #f3f2f2;
+    --sombra: rgba(0, 0, 0, 0.1);
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Roboto', sans-serif;
+  background-color: var(--branco2);
+  color: var(--verde);
+}
+
+/* Topo da página */
+.top-nav {
+  text-align: center;
+  padding: 15px;
+  background: linear-gradient(135deg, var(--verde), var(--verde-claro));
+  box-shadow: 0 4px 8px var(--sombra);
+  border-radius: 0 0 20px 20px;
+  position: relative;
+}
+
+.title-logo {
+  color: white;
+  font-size: 24px;
+  font-weight: bold;
+  margin: 0;
+}
+
+.subtitle {
+  color: white;
+  font-size: 14px;
+  margin: 5px 0 0 0;
+  opacity: 0.9;
+}
+
+.user-info {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.user-info span {
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.logout-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  border-radius: 50%;
+  width: 35px;
+  height: 35px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.logout-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.1);
+}
+
+.logout-btn i {
+  color: white;
+  font-size: 18px;
+}
+
+/* Estilo da Tab Bar */
+.toolbar {
+  height: 80px;
+  border-radius: 20px 20px 0 0;
+}
+
+.toolbar-inner {
+  background-color: var(--branquin);
+  border-top: 1px solid var(--branco);
+  display: flex;
+  justify-content: space-around;
+  box-shadow: 0 -4px 8px var(--sombra);
+}
+
+.tab-link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--verde);
+  transition: transform 0.2s ease-in-out, color 0.3s;
+  font-size: 16px;
+}
+
+.tab-link i {
+  font-size: 28px;
+}
+
+.toolbar-inner .link {
+  flex: 1;
+  height: 80px;
+  line-height: 25px;
+  font-weight: bold;
+  color: var(--verde);
+}
+
+.toolbar-inner .link:not(.active) {
+  color: var(--branco);
+  font-weight: normal;
+}
+
+.tab-link:hover,
+.tab-link:focus {
+  transform: scale(1.1);
+  color: var(--verde-claro);
+}
+
+/* Seção de boas-vindas */
+.welcome-section {
+  padding: 20px;
+}
+
+.welcome-card {
+  background: var(--branquin);
+  border-radius: 15px;
+  padding: 30px;
+  text-align: center;
+  box-shadow: 0 4px 12px var(--sombra);
+  margin-bottom: 20px;
+}
+
+.welcome-card i {
+  font-size: 48px;
+  color: var(--verde);
+  margin-bottom: 15px;
+}
+
+.welcome-card h2 {
+  color: var(--verde);
+  margin: 0 0 10px 0;
+  font-size: 20px;
+}
+
+.welcome-card p {
+  color: #666;
+  margin: 0;
+  font-size: 14px;
+}
+
+/* Estatísticas rápidas */
+.quick-stats {
+  display: flex;
+  justify-content: space-around;
+  padding: 0 20px 20px;
+  gap: 10px;
+}
+
+.stat-item {
+  background: var(--branquin);
+  border-radius: 12px;
+  padding: 15px;
+  text-align: center;
+  flex: 1;
+  box-shadow: 0 2px 8px var(--sombra);
+}
+
+.stat-item i {
+  font-size: 24px;
+  color: var(--verde);
+  display: block;
+  margin-bottom: 5px;
+}
+
+.stat-item span {
+  display: block;
+  font-size: 20px;
+  font-weight: bold;
+  color: var(--verde);
+}
+
+.stat-item small {
+  color: #666;
+  font-size: 12px;
+}
+
+/* Seção do mapa */
+.map-section {
+  padding: 0 20px 20px;
+}
+
+.map-section h3 {
+  color: var(--verde);
+  font-size: 16px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.map-section h3 i {
+  font-size: 18px;
+}
+
+/* Formulários */
+form {
+  padding: 20px;
+  background-color: var(--branquin);
+  text-align: center;
+  border-radius: 15px;
+  box-shadow: 0 4px 8px var(--sombra);
+  margin: 20px auto;
+  max-width: 500px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--verde);
+  font-weight: bold;
+  font-size: 14px;
+}
+
+input[type="text"],
+input[type="number"],
+select,
+textarea {
+  width: 100%;
+  height: 45px;
+  background-color: var(--branco2);
+  border-radius: 10px;
+  padding: 10px;
+  border: none;
+  outline: none;
+  box-shadow: inset 2px 2px 5px var(--sombra);
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+select {
+  cursor: pointer;
+}
+
+textarea {
+  height: 80px;
+  resize: vertical;
+}
+
+::placeholder {
+  color: gray;
+}
+
+.ib {
+  position: absolute;
+  right: 7%;
+  top: 22px;
+  font-size: 30px;
+}
+
+.title-2 {
+  color: var(--verde);
+  margin-left: 20px;
+  font-weight: bold;
+}
+
+/* Botões */
+button {
+  background: linear-gradient(135deg, var(--verde), var(--verde-claro));
+  border: none;
+  padding: 12px 24px;
+  font-size: 16px;
+  color: white;
+  border-radius: 25px;
+  cursor: pointer;
+  transition: background 0.3s, transform 0.2s, box-shadow 0.3s;
+  box-shadow: 2px 2px 8px var(--sombra);
+}
+
+button:hover {
+  background: var(--verde);
+  transform: scale(1.05);
+  box-shadow: 4px 4px 12px var(--sombra);
+}
+
+.submit-btn {
+  width: 100%;
+  height: 50px;
+  font-size: 16px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+/* Filtros de busca */
+.filters {
+  display: flex;
+  gap: 10px;
+  padding: 0 20px 20px;
+  overflow-x: auto;
+}
+
+.filter-btn {
+  background: var(--branquin);
+  color: var(--verde);
+  border: 2px solid var(--verde);
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 12px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.filter-btn.active {
+  background: var(--verde);
+  color: white;
+}
+
+/* Resultados de busca */
+.search-results {
+  padding: 0 20px 20px;
+}
+
+.no-results {
+  text-align: center;
+  padding: 40px 20px;
+  color: #666;
+}
+
+.no-results i {
+  font-size: 48px;
+  color: var(--branco);
+  margin-bottom: 15px;
+  display: block;
+}
+
+/* Estatísticas */
+.stats-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 15px;
+  padding: 20px;
+}
+
+.stat-card {
+  background: var(--branquin);
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+  box-shadow: 0 2px 8px var(--sombra);
+}
+
+.stat-card i {
+  font-size: 32px;
+  color: var(--verde);
+  margin-bottom: 10px;
+  display: block;
+}
+
+.stat-card h3 {
+  color: var(--verde);
+  font-size: 14px;
+  margin: 0 0 10px 0;
+}
+
+.stat-card p {
+  font-size: 24px;
+  font-weight: bold;
+  color: var(--verde);
+  margin: 0;
+}
+
+.recent-items {
+  padding: 20px;
+}
+
+.recent-items h3 {
+  color: var(--verde);
+  margin-bottom: 15px;
+}
+
+.no-data {
+  text-align: center;
+  color: #666;
+  font-style: italic;
+}
+
+/* Mensagem de sucesso */
+.success-message {
+  background: var(--verde-claro);
+  color: var(--verde);
+  padding: 15px;
+  border-radius: 10px;
+  text-align: center;
+  margin: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.success-message i {
+  font-size: 24px;
+}
+
+/* Estilizando o mapa */
+#map {
+  width: 90%;
+  max-width: 600px;
+  height: 300px;
+  margin: 20px auto;
+  border-radius: 15px;
+  box-shadow: 0 4px 12px var(--sombra);
+}
+
+/* Resultados de busca */
+.search-result-item {
+  background: var(--branquin);
+  border-radius: 12px;
+  padding: 15px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  box-shadow: 0 2px 8px var(--sombra);
+}
+
+.result-icon {
+  background: var(--verde-claro);
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.result-icon i {
+  font-size: 24px;
+  color: var(--verde);
+}
+
+.result-info {
+  flex: 1;
+}
+
+.result-info h4 {
+  color: var(--verde);
+  margin: 0 0 5px 0;
+  font-size: 16px;
+}
+
+.result-info p {
+  color: #333;
+  margin: 0 0 3px 0;
+  font-size: 14px;
+}
+
+.result-info small {
+  color: #666;
+  font-size: 12px;
+}
+
+.result-date {
+  color: #999;
+  font-size: 12px;
+  text-align: right;
+}
+
+/* Itens recentes */
+.recent-item {
+  background: var(--branquin);
+  border-radius: 10px;
+  padding: 15px;
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 6px var(--sombra);
+}
+
+.item-info strong {
+  color: var(--verde);
+  display: block;
+  font-size: 14px;
+  margin-bottom: 3px;
+}
+
+.item-info span {
+  color: #333;
+  font-size: 13px;
+  display: block;
+}
+
+.item-info small {
+  color: #666;
+  font-size: 11px;
+}
+
+.item-date {
+  color: #999;
+  font-size: 12px;
+}
+
+/* Esconde o input de arquivo padrão */
+input[type="file"] {
+    display: none;
+  }
+  
+  /* Estilo do botão personalizado */
+  .custom-file-input {
+    display: inline-block;
+    background-color: var(--verde);
+    color: white;
+    padding: 12px 30px;
+    font-size: 16px;
+    border-radius: 50px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease-in-out;
+    text-align: center;
+    border: 2px solid transparent;
+    position: relative;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Hover para o botão personalizado */
+  .custom-file-input:hover {
+    background-color: var(--verde-claro);
+    transform: translateY(-3px);
+    box-shadow: 0px 8px 15px rgba(0, 0, 0, 0.2);
+  }
+  
+  /* Efeito de foco */
+  .custom-file-input:focus {
+    outline: none;
+    box-shadow: 0 0 0 4px rgba(76, 175, 80, 0.4);
+  }
+  
+  /* Efeito de animação no botão personalizado */
+  .custom-file-input::after {
+    content: "Escolher Imagem";
+    display: block;
+    font-size: 14px;
+    margin-top: 8px;
+    transition: opacity 0.3s ease;
+  }
+  
+  /* Estilo para mostrar nome do arquivo */
+  .file-name {
+    display: block;
+    margin-top: 10px;
+    font-size: 14px;
+    color: #666;
+  }
+  
+  /* Mostra o nome do arquivo quando selecionado */
+  input[type="file"]:valid + .custom-file-input + .file-name {
+    color: var(--verde);
+    font-weight: bold;
+  }
+  
+.page-content {
+  padding-bottom: 80px !important;
+}
+@media (max-width: 600px) {
+  .page-content {
+    padding-bottom: 100px !important;
+  }
+}
+
+.toolbar-bottom {
+  z-index: 1000;
+  pointer-events: auto;
+}
+
+/* --- HISTÓRICO DE COLETAS --- */
+.historico-item {
+    background: #fff !important;
+    border: 2px solid #b2dfdb !important;
+    border-left: 8px solid #43a047 !important;
+    border-radius: 20px !important;
+    margin-bottom: 22px !important;
+    box-shadow: 0 2px 16px rgba(67,160,71,0.09) !important;
+    overflow: hidden !important;
+    transition: box-shadow 0.2s, border 0.2s !important;
+    padding: 0 !important;
+}
+.historico-item:hover {
+    box-shadow: 0 8px 32px rgba(67,160,71,0.15) !important;
+    border-left: 8px solid #219150 !important;
+}
+.historico-item-content {
+    padding: 20px 20px 12px 20px !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: flex-start !important;
+}
+.historico-item strong {
+    color: #219150 !important;
+    font-size: 1.18rem !important;
+    font-weight: 700 !important;
+}
+.historico-info {
+    color: #388e3c !important;
+    font-size: 1.04rem !important;
+    margin: 8px 0 0 0 !important;
+}
+.historico-data {
+    color: #607d8b !important;
+    font-size: 1.01rem !important;
+    margin-top: 10px !important;
+    font-style: italic !important;
+}
+.badge-coletado {
+    background: linear-gradient(90deg, #43a047 80%, #388e3c 100%) !important;
+    color: white !important;
+    padding: 9px 22px !important;
+    border-radius: 18px !important;
+    font-size: 1.08rem !important;
+    font-weight: bold !important;
+    box-shadow: 0 2px 8px rgba(67,160,71,0.13) !important;
+    margin-top: 8px !important;
+    letter-spacing: 0.6px !important;
+    border: 2px solid #e8f5e9 !important;
+    display: inline-block !important;
+}
+@media (max-width: 600px) {
+    .historico-item-content { padding: 14px 8px 8px 12px !important; }
+    .historico-item { border-radius: 12px !important; }
+    .badge-coletado { font-size: 1rem !important; padding: 7px 14px !important; }
+}
+
+.historico-titulo {
+  color: #218c1e;
+  font-size: 1.7em;
+  font-weight: 700;
+  text-align: center;
+  margin: 24px 0 10px 0;
+  letter-spacing: 1px;
+  text-shadow: 0 2px 8px #b2ffcb44;
+  border-bottom: 2.5px solid #43a04733;
+  display: inline-block;
+  padding: 0 18px 6px 18px;
+  border-radius: 0 0 12px 12px;
+  background: linear-gradient(90deg, #e8f5e9 60%, #b2ffcb 100%);
+}
+@media (max-width: 600px) {
+  .historico-titulo {
+    font-size: 1.2em;
+    padding: 0 8px 4px 8px;
+    margin: 14px 0 6px 0;
+  }
+}
+
+/* --- TÍTULOS DO HISTÓRICO --- */
+.historico-header h2, .historico-header .stat-title, .top-nav .title-2 {
+    font-size: 1.7rem !important;
+    font-weight: 600 !important;
+    color: #388e3c !important;
+    margin-bottom: 4px !important;
+    letter-spacing: 0.2px !important;
+    text-shadow: none !important;
+}
+.historico-header p {
+    font-size: 1.02rem !important;
+    color: #6fbf73 !important;
+    opacity: 0.85 !important;
+    font-weight: 400 !important;
+    margin: 0 0 8px 0 !important;
+}
+
+/* --- ESTATÍSTICAS DO HISTÓRICO BÁSICO --- */
+.historico-stats {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 14px !important;
+    margin-bottom: 28px !important;
+    padding: 0 10px !important;
+    align-items: center !important;
+}
+.stat-card {
+    background: #fff !important;
+    border-radius: 14px !important;
+    box-shadow: none !important;
+    padding: 22px 0 16px 0 !important;
+    min-width: 180px !important;
+    max-width: 320px !important;
+    width: 100%;
+    border: 1px solid #e0e0e0 !important;
+    margin: 0 auto !important;
+    text-align: center !important;
+    transition: none !important;
+}
+.stat-number {
+    font-size: 2.1rem !important;
+    font-weight: 600 !important;
+    color: #388e3c !important;
+    margin-bottom: 2px !important;
+    letter-spacing: 0.2px !important;
+    text-shadow: none !important;
+}
+.stat-label {
+    font-size: 1.01rem !important;
+    color: #6fbf73 !important;
+    margin-top: 2px !important;
+    font-weight: 400 !important;
+    letter-spacing: 0.1px !important;
+    opacity: 0.85;
+}
+@media (max-width: 600px) {
+    .stat-card { min-width: 0 !important; width: 100% !important; }
+    .historico-stats { gap: 8px !important; }
+    .historico-header h2, .historico-header .stat-title, .top-nav .title-2 { font-size: 1.25rem !important; }
+}
+  
+/* --- HISTÓRICO DE COLETAS MINIMALISTA --- */
+.historico-item {
+    background: #fff !important;
+    border: 1px solid #e0e0e0 !important;
+    border-left: 4px solid #43a047 !important;
+    border-radius: 12px !important;
+    margin-bottom: 14px !important;
+    box-shadow: none !important;
+    overflow: hidden !important;
+    padding: 0 !important;
+}
+.historico-item-content {
+    padding: 12px 12px 8px 12px !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: flex-start !important;
+}
+.historico-item strong {
+    color: #219150 !important;
+    font-size: 1.05rem !important;
+    font-weight: 600 !important;
+}
+.historico-info {
+    color: #388e3c !important;
+    font-size: 0.97rem !important;
+    margin: 6px 0 0 0 !important;
+}
+.historico-data {
+    color: #607d8b !important;
+    font-size: 0.93rem !important;
+    margin-top: 7px !important;
+    font-style: italic !important;
+}
+.badge-coletado {
+    background: #43a047 !important;
+    color: white !important;
+    padding: 4px 12px !important;
+    border-radius: 12px !important;
+    font-size: 0.93rem !important;
+    font-weight: 500 !important;
+    box-shadow: none !important;
+    margin-top: 4px !important;
+    letter-spacing: 0.3px !important;
+    border: none !important;
+    display: inline-block !important;
+}
+@media (max-width: 600px) {
+    .historico-item-content { padding: 8px 6px 6px 8px !important; }
+    .historico-item { border-radius: 8px !important; }
+    .badge-coletado { font-size: 0.89rem !important; padding: 3px 8px !important; }
+}
+  
+#catador-only-fab {
+  margin-bottom: 0;
+}
+#filtro-raio-container {
+  min-height: 48px;
+  height: 48px;
+  margin-bottom: 8px;
+}
+  

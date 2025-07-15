@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <!-- Required meta tags-->
+    <meta charset="utf-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <!-- Color theme for statusbar (Android only) -->
+    <meta name="theme-color" content="#2196f3">
+    <!-- Your app title -->
+    <title>Buscar - GreenTech</title>
+    <!-- Path to Framework7 Library Bundle CSS -->
+    <link rel="stylesheet" href="/lib/framework7-bundle.min.css">
+    <!-- CSS PERSONALIZADO PARA MENU-->
+    <link rel="stylesheet" href="/css/index.css">
+    <!--Ícones Material Design-->
+    <link rel="stylesheet" href="/css/materialdesignicons.min.css">
+
+
+</head>
+
+<body>
+    <!-- App root element -->
+    <div id="app">
+
+        <!-- Your main view, should have "view-main" class -->
+        <div class="view view-main">
+            <!-- Initial Page, "data-name" contains page name -->
+            <div data-name="link3" class="page">
+
+                <!-- Top Navbar -->
+                <div class="top-nav">
+                    <h1 class="title-2">Buscar Materiais</h1>
+                </div>
+
+                <!-- Scrollable page content -->
+                <div class="page-content">
+                    <form id="search-form">
+                        <input id="search-input" placeholder="Digite o tipo de material..." type="text">
+                        <i class="ib mdi mdi-magnify"></i>
+                    </form>
+                    
+                    <div class="filters">
+                        <button class="filter-btn active" data-filter="all">Todos</button>
+                        <button class="filter-btn" data-filter="plastic">Plástico</button>
+                        <button class="filter-btn" data-filter="metal">Metal</button>
+                        <button class="filter-btn" data-filter="paper">Papel</button>
+                        <button class="filter-btn" data-filter="glass">Vidro</button>
+                    </div>
+                    
+                    <div class="search-results" id="search-results">
+                        <div class="no-results">
+                            <i class="mdi mdi-magnify"></i>
+                            <p>Digite algo para buscar ou use os filtros</p>
+                        </div>
+                    </div>
+                    <!-- Container para os cards reativos do React -->
+                    <div id="materiais-lista"></div>
+                    <div style="height:250px;width:100%;pointer-events:none;"></div>
+                </div>
+                
+            </div>
+        </div>
+    </div>
+    <!-- Path to Framework7 Library Bundle JS-->
+    <script type="text/javascript" src="/lib/framework7-bundle.min.js"></script>
+	<!-- jQuery -->
+	<script type="text/javascript" src="/lib/jquery-3.7.0.min.js"></script>	
+    <!-- API Client -->
+    <script type="text/javascript" src="/js/api.js"></script>
+    <!-- Roteamento do app-->
+    <script type="text/javascript" src="/js/routes.js"></script>
+    <!-- App principal -->
+    <script type="text/javascript" src="/js/app.js"></script>
+    <!-- React para cards reativos -->
+    <!-- <script src="/js/react/main.7b0296ba.js"></script> -->
+    <script src="cordova.js"></script>
+</body>
+
+</html>

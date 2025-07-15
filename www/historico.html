@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <!-- Required meta tags-->
+    <meta charset="utf-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <!-- Color theme for statusbar (Android only) -->
+    <meta name="theme-color" content="#2196f3">
+    <!-- Your app title -->
+    <title>Histórico - GreenTech</title>
+    <!-- Path to Framework7 Library Bundle CSS -->
+    <link rel="stylesheet" href="/lib/framework7-bundle.min.css">
+    <link rel="stylesheet" href="/css/index.css">
+    <link rel="stylesheet" href="/css/materialdesignicons.min.css">
+    
+    <style>
+        body {
+            background: linear-gradient(135deg, #e8f5e9 0%, #f4fdf6 100%) !important;
+        }
+        .historico-header {
+            background: linear-gradient(135deg, #43a047 80%, #388e3c 100%) !important;
+            color: white !important;
+            padding: 36px 20px 30px 20px !important;
+            text-align: center !important;
+            border-radius: 0 0 32px 32px !important;
+            margin-bottom: 36px !important;
+            box-shadow: 0 6px 32px rgba(67,160,71,0.13) !important;
+        }
+        .historico-header h2 {
+            font-size: 2.2rem !important;
+            font-weight: 800 !important;
+            margin-bottom: 8px !important;
+            letter-spacing: 0.5px !important;
+            color: #e8f5e9 !important;
+            text-shadow: 0 2px 8px rgba(56,142,60,0.10) !important;
+        }
+        .historico-header p {
+            font-size: 1.13rem !important;
+            opacity: 0.97 !important;
+            color: #c8e6c9 !important;
+        }
+        .historico-stats {
+            display: flex !important;
+            justify-content: center !important;
+            gap: 28px !important;
+            margin-bottom: 36px !important;
+            padding: 0 20px !important;
+        }
+        .stat-card {
+            background: #f4fdf6 !important;
+            border: 2px solid #43a047 !important;
+            border-radius: 24px !important;
+            padding: 26px 34px 20px 34px !important;
+            text-align: center !important;
+            box-shadow: 0 2px 16px rgba(67,160,71,0.10) !important;
+            min-width: 150px !important;
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            transition: box-shadow 0.2s, border 0.2s !important;
+        }
+        .stat-card:hover {
+            box-shadow: 0 6px 32px rgba(67,160,71,0.16) !important;
+            border: 2.5px solid #388e3c !important;
+        }
+        .stat-number {
+            font-size: 2.2rem !important;
+            font-weight: bold !important;
+            color: #219150 !important;
+            margin-bottom: 2px !important;
+            letter-spacing: 0.5px !important;
+        }
+        .stat-label {
+            font-size: 1.05rem !important;
+            color: #388e3c !important;
+            margin-top: 2px !important;
+            font-weight: 600 !important;
+            letter-spacing: 0.2px !important;
+        }
+        .historico-lista {
+            padding: 0 8px !important;
+            max-width: 540px !important;
+            margin: 0 auto !important;
+        }
+        .historico-item {
+            background: #fff !important;
+            border: 2px solid #b2dfdb !important;
+            border-left: 8px solid #43a047 !important;
+            border-radius: 20px !important;
+            margin-bottom: 22px !important;
+            box-shadow: 0 2px 16px rgba(67,160,71,0.09) !important;
+            overflow: hidden !important;
+            transition: box-shadow 0.2s, border 0.2s !important;
+        }
+        .historico-item:hover {
+            box-shadow: 0 8px 32px rgba(67,160,71,0.15) !important;
+            border-left: 8px solid #219150 !important;
+        }
+        .historico-item-content {
+            padding: 20px 20px 12px 20px !important;
+            display: flex !important;
+            justify-content: space-between !important;
+            align-items: flex-start !important;
+        }
+        .historico-item strong {
+            color: #219150 !important;
+            font-size: 1.18rem !important;
+            font-weight: 700 !important;
+        }
+        .historico-info {
+            color: #388e3c !important;
+            font-size: 1.04rem !important;
+            margin: 8px 0 0 0 !important;
+        }
+        .historico-data {
+            color: #607d8b !important;
+            font-size: 1.01rem !important;
+            margin-top: 10px !important;
+        }
+        .badge-coletado {
+            background: linear-gradient(90deg, #43a047 80%, #388e3c 100%) !important;
+            color: white !important;
+            padding: 9px 22px !important;
+            border-radius: 18px !important;
+            font-size: 1.08rem !important;
+            font-weight: bold !important;
+            box-shadow: 0 2px 8px rgba(67,160,71,0.13) !important;
+            margin-top: 8px !important;
+            letter-spacing: 0.6px !important;
+            border: 2px solid #e8f5e9 !important;
+        }
+        .no-data {
+            text-align: center !important;
+            padding: 54px 20px 36px 20px !important;
+            color: #bdbdbd !important;
+        }
+        .no-data i {
+            font-size: 60px !important;
+            margin-bottom: 20px !important;
+            display: block !important;
+            color: #b2dfdb !important;
+        }
+        .historico-separador {
+            height: 2px !important;
+            background: linear-gradient(90deg, #43a047 60%, #b2dfdb 100%) !important;
+            border-radius: 2px !important;
+            margin: 18px 0 18px 0 !important;
+            width: 80% !important;
+            margin-left: 10% !important;
+        }
+        @media (max-width: 600px) {
+            .historico-header { padding: 24px 6px 18px 6px !important; border-radius: 0 0 18px 18px !important; }
+            .historico-stats { flex-direction: column !important; gap: 14px !important; }
+            .stat-card { min-width: 0 !important; width: 100% !important; }
+            .historico-lista { padding: 0 2px !important; }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- App root element -->
+    <div id="app">
+
+        <!-- Your main view, should have "view-main" class -->
+        <div class="view view-main">
+            <!-- Initial Page, "data-name" contains page name -->
+            <div data-name="historico" class="page">
+
+                <!-- Top Navbar -->
+                <div class="top-nav">
+                    <h1 class="title-2">Histórico de Coletas</h1>
+                </div>
+
+                <!-- Scrollable page content -->
+                <div class="page-content">
+                    <!-- Header com estatísticas -->
+                    <div class="historico-header">
+                        <h2 style="margin: 0; font-size: 24px;">Seu Histórico</h2>
+                        <p style="margin: 8px 0 0 0; opacity: 0.9;">Acompanhe suas coletas</p>
+                    </div>
+                    
+                    <!-- Estatísticas -->
+                    <div class="historico-stats">
+                        <div class="stat-card">
+                            <div class="stat-number" id="total-coletas">0</div>
+                            <div class="stat-label">Total de Coletas</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="peso-total">0.0 kg</div>
+                            <div class="stat-label">Peso Total</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Lista de histórico -->
+                    <div class="historico-lista">
+                        <div id="historico-lista">
+                            <!-- Conteúdo será carregado dinamicamente -->
+                        </div>
+                    </div>
+                    
+                    <div style="height:100px;width:100%;pointer-events:none;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- API Client -->
+    <script type="text/javascript" src="/js/api.js"></script>
+    <!-- Roteamento do app-->
+    <script type="text/javascript" src="/js/routes.js"></script>
+    <!-- App principal -->
+    <script type="text/javascript" src="/js/app.js"></script>
+    <script src="cordova.js"></script>
+</body>
+
+</html> 

@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <!-- Required meta tags-->
+    <meta charset="utf-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <!-- Color theme for statusbar (Android only) -->
+    <meta name="theme-color" content="#2196f3">
+    <!-- Your app title -->
+    <title>Adicionar - GreenTech</title>
+    <!-- Path to Framework7 Library Bundle CSS -->
+    <link rel="stylesheet" href="/lib/framework7-bundle.min.css">
+    <!-- CSS PERSONALIZADO PARA MENU-->
+    <link rel="stylesheet" href="/css/index.css">
+    <!--Ícones Material Design-->
+    <link rel="stylesheet" href="/css/materialdesignicons.min.css">
+
+
+</head>
+
+<body>
+    <!-- App root element -->
+    <div id="app">
+
+        <!-- Your main view, should have "view-main" class -->
+        <div class="view view-main">
+            <!-- Initial Page, "data-name" contains page name -->
+            <div data-name="link2" class="page">
+
+                <!-- Top Navbar -->
+                <div class="top-nav">
+                    <h1 class="title-2">Adicionar Material</h1>
+                </div>
+
+                <!-- Scrollable page content -->
+                <div class="page-content">
+                    <form id="add-material-form" onsubmit="return false;">
+                        <div class="form-group">
+                            <label for="tipo">Tipo de Material: *</label>
+                            <select name="tipo" id="tipo" required>
+                                <option value="">Selecione o tipo</option>
+                                <option value="plastic">Plástico</option>
+                                <option value="metal">Metal</option>
+                                <option value="paper">Papel</option>
+                                <option value="glass">Vidro</option>
+                                <option value="organic">Orgânico</option>
+                                <option value="other">Outro</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="quantidade">Quantidade: *</label>
+                            <input type="text" name="quantidade" id="quantidade" placeholder="Ex.: Um saco de 20 litros" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="peso">Peso (kg):</label>
+                            <input type="number" name="peso" id="peso" placeholder="Ex.: 5.5" step="0.1" min="0">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="descricao">Descrição:</label>
+                            <textarea name="descricao" id="descricao" placeholder="Descreva o que você achar interessante..." rows="4"></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="imagem">Anexar Imagem:</label>
+                            <input type="file" id="imagem" name="imagem" accept="image/*">
+                            <label for="imagem" class="custom-file-input">
+                                <i class="mdi mdi-camera"></i>
+                            </label>
+                            <span class="file-name" id="file-name"></span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <button type="button" id="btn-get-location" style="background:#43a047;color:#fff;border:none;border-radius:8px;padding:10px 18px;font-size:1rem;cursor:pointer;margin-top:8px;display:flex;align-items:center;gap:8px;">
+                                <i class="mdi mdi-crosshairs-gps"></i> Usar minha localização
+                            </button>
+                            <span id="location-status" style="display:block;margin-top:6px;font-size:0.95em;color:#388e3c;"></span>
+                            <input type="hidden" name="latitude" id="latitude">
+                            <input type="hidden" name="longitude" id="longitude">
+                        </div>
+                        
+                        <button type="submit" class="submit-btn" id="btn-add-material">
+                            <i class="mdi mdi-plus"></i>
+                            Adicionar Material
+                        </button>
+                    </form>
+                    
+                    <div id="success-message" class="success-message" style="display: none;">
+                        <i class="mdi mdi-check-circle"></i>
+                        <p>Material adicionado com sucesso!</p>
+                    </div>
+                    <div style="height:250px;width:100%;pointer-events:none;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Path to Framework7 Library Bundle JS-->
+    <script type="text/javascript" src="/lib/framework7-bundle.min.js"></script>
+	<!-- jQuery -->
+	<script type="text/javascript" src="/lib/jquery-3.7.0.min.js"></script>	
+    <!-- API Client -->
+    <script type="text/javascript" src="/js/api.js"></script>
+    <!-- Roteamento do app-->
+    <script type="text/javascript" src="/js/routes.js"></script>
+    <!-- App principal -->
+    <script type="text/javascript" src="/js/app.js"></script>
+    <script src="cordova.js"></script>
+</body>
+
+</html>
