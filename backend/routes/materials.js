@@ -326,17 +326,13 @@ router.post('/', authenticateToken, (req, res) => {
       });
     }
 
-    // Conversão segura de latitude/longitude
-    const latitudeNum = (latitude !== undefined && latitude !== null && latitude !== '' && !isNaN(Number(latitude))) ? Number(latitude) : null;
-    const longitudeNum = (longitude !== undefined && longitude !== null && longitude !== '' && !isNaN(Number(longitude))) ? Number(longitude) : null;
-
     // Adicione o campo status no insert
     const query = `
       INSERT INTO materials (user_id, tipo, quantidade, peso, descricao, imagem, latitude, longitude, status)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
-    db.run(query, [user_id, tipo, quantidade, peso, descricao, imagem, latitudeNum, longitudeNum, 'disponivel'], function(err) {
+    db.run(query, [user_id, tipo, quantidade, peso, descricao, imagem, latitude, longitude, 'disponivel'], function(err) {
       if (err) {
         console.error('Erro ao criar material:', err);
         return res.status(500).json({ error: 'Erro interno do servidor' });

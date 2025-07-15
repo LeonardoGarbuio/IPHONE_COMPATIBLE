@@ -312,6 +312,7 @@ button:hover {
   gap: 10px;
   padding: 0 20px 20px;
   overflow-x: auto;
+  margin-bottom: 80px;
 }
 
 .filter-btn {
@@ -525,8 +526,8 @@ input[type="file"] {
   /* Estilo do botão personalizado */
   .custom-file-input {
     display: inline-block;
-    background-color: var(--verde);
-    color: white;
+    background-color: #fff;
+    color: var(--verde);
     padding: 12px 30px;
     font-size: 16px;
     border-radius: 50px;
@@ -534,30 +535,29 @@ input[type="file"] {
     font-weight: 600;
     transition: all 0.3s ease-in-out;
     text-align: center;
-    border: 2px solid transparent;
+    border: 2px solid var(--verde);
     position: relative;
-    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.05);
   }
-  
-  /* Hover para o botão personalizado */
+  .custom-file-input i {
+    color: var(--verde);
+  }
   .custom-file-input:hover {
-    background-color: var(--verde-claro);
+    background-color: #fff;
+    border-color: #388e3c;
     transform: translateY(-3px);
-    box-shadow: 0px 8px 15px rgba(0, 0, 0, 0.2);
+    box-shadow: 0px 8px 15px rgba(0, 0, 0, 0.08);
   }
-  
-  /* Efeito de foco */
   .custom-file-input:focus {
     outline: none;
-    box-shadow: 0 0 0 4px rgba(76, 175, 80, 0.4);
+    box-shadow: 0 0 0 4px rgba(76, 175, 80, 0.15);
   }
-  
-  /* Efeito de animação no botão personalizado */
   .custom-file-input::after {
     content: "Escolher Imagem";
     display: block;
     font-size: 14px;
     margin-top: 8px;
+    color: var(--verde);
     transition: opacity 0.3s ease;
   }
   
@@ -589,61 +589,63 @@ input[type="file"] {
   pointer-events: auto;
 }
 
-/* --- HISTÓRICO DE COLETAS --- */
+/* --- HISTÓRICO MAIS NORMAL --- */
 .historico-item {
-    background: #fff !important;
-    border: 2px solid #b2dfdb !important;
-    border-left: 8px solid #43a047 !important;
-    border-radius: 20px !important;
-    margin-bottom: 22px !important;
-    box-shadow: 0 2px 16px rgba(67,160,71,0.09) !important;
-    overflow: hidden !important;
-    transition: box-shadow 0.2s, border 0.2s !important;
-    padding: 0 !important;
-}
-.historico-item:hover {
-    box-shadow: 0 8px 32px rgba(67,160,71,0.15) !important;
-    border-left: 8px solid #219150 !important;
+  background: #fff;
+  border-radius: 10px;
+  margin: 12px 0;
+  padding: 16px 18px;
+  box-shadow: 0 2px 8px 0 rgba(76,175,80,0.07);
+  border: 1px solid #c8e6c9;
+  position: relative;
+  transition: box-shadow 0.15s;
 }
 .historico-item-content {
-    padding: 20px 20px 12px 20px !important;
-    display: flex !important;
-    justify-content: space-between !important;
-    align-items: flex-start !important;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 .historico-item strong {
-    color: #219150 !important;
-    font-size: 1.18rem !important;
-    font-weight: 700 !important;
+  color: #388e3c;
+  font-size: 1.1em;
+  letter-spacing: 0.5px;
+  font-family: inherit;
 }
 .historico-info {
-    color: #388e3c !important;
-    font-size: 1.04rem !important;
-    margin: 8px 0 0 0 !important;
+  color: #444;
+  font-size: 1em;
+  margin-top: 6px;
+  font-family: inherit;
 }
 .historico-data {
-    color: #607d8b !important;
-    font-size: 1.01rem !important;
-    margin-top: 10px !important;
-    font-style: italic !important;
+  color: #888;
+  font-size: 0.95em;
+  margin-top: 2px;
+  font-style: italic;
+  font-family: inherit;
 }
 .badge-coletado {
-    background: linear-gradient(90deg, #43a047 80%, #388e3c 100%) !important;
-    color: white !important;
-    padding: 9px 22px !important;
-    border-radius: 18px !important;
-    font-size: 1.08rem !important;
-    font-weight: bold !important;
-    box-shadow: 0 2px 8px rgba(67,160,71,0.13) !important;
-    margin-top: 8px !important;
-    letter-spacing: 0.6px !important;
-    border: 2px solid #e8f5e9 !important;
-    display: inline-block !important;
+  background: #43a047;
+  color: #fff;
+  padding: 6px 16px;
+  border-radius: 8px;
+  font-size: 1em;
+  font-weight: 600;
+  box-shadow: 0 1px 4px 0 rgba(76,175,80,0.10);
+  letter-spacing: 1px;
+  border: none;
+  text-shadow: none;
 }
 @media (max-width: 600px) {
-    .historico-item-content { padding: 14px 8px 8px 12px !important; }
-    .historico-item { border-radius: 12px !important; }
-    .badge-coletado { font-size: 1rem !important; padding: 7px 14px !important; }
+  .historico-item {
+    margin: 8px 0;
+    padding: 10px 8px;
+    border-radius: 7px;
+  }
+  .badge-coletado {
+    padding: 4px 10px;
+    font-size: 0.95em;
+  }
 }
 
 .historico-titulo {
@@ -667,126 +669,135 @@ input[type="file"] {
     margin: 14px 0 6px 0;
   }
 }
-
-/* --- TÍTULOS DO HISTÓRICO --- */
-.historico-header h2, .historico-header .stat-title, .top-nav .title-2 {
-    font-size: 1.7rem !important;
-    font-weight: 600 !important;
-    color: #388e3c !important;
-    margin-bottom: 4px !important;
-    letter-spacing: 0.2px !important;
-    text-shadow: none !important;
-}
-.historico-header p {
-    font-size: 1.02rem !important;
-    color: #6fbf73 !important;
-    opacity: 0.85 !important;
-    font-weight: 400 !important;
-    margin: 0 0 8px 0 !important;
-}
-
-/* --- ESTATÍSTICAS DO HISTÓRICO BÁSICO --- */
-.historico-stats {
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 14px !important;
-    margin-bottom: 28px !important;
-    padding: 0 10px !important;
-    align-items: center !important;
-}
-.stat-card {
-    background: #fff !important;
-    border-radius: 14px !important;
-    box-shadow: none !important;
-    padding: 22px 0 16px 0 !important;
-    min-width: 180px !important;
-    max-width: 320px !important;
-    width: 100%;
-    border: 1px solid #e0e0e0 !important;
-    margin: 0 auto !important;
-    text-align: center !important;
-    transition: none !important;
-}
-.stat-number {
-    font-size: 2.1rem !important;
-    font-weight: 600 !important;
-    color: #388e3c !important;
-    margin-bottom: 2px !important;
-    letter-spacing: 0.2px !important;
-    text-shadow: none !important;
-}
-.stat-label {
-    font-size: 1.01rem !important;
-    color: #6fbf73 !important;
-    margin-top: 2px !important;
-    font-weight: 400 !important;
-    letter-spacing: 0.1px !important;
-    opacity: 0.85;
-}
-@media (max-width: 600px) {
-    .stat-card { min-width: 0 !important; width: 100% !important; }
-    .historico-stats { gap: 8px !important; }
-    .historico-header h2, .historico-header .stat-title, .top-nav .title-2 { font-size: 1.25rem !important; }
-}
   
-/* --- HISTÓRICO DE COLETAS MINIMALISTA --- */
+/* --- HISTÓRICO DE COLETAS (menos chamativo) --- */
+#historico-lista {
+  padding: 0 8px;
+  max-width: 540px;
+  margin: 0 auto;
+}
 .historico-item {
-    background: #fff !important;
-    border: 1px solid #e0e0e0 !important;
-    border-left: 4px solid #43a047 !important;
-    border-radius: 12px !important;
-    margin-bottom: 14px !important;
-    box-shadow: none !important;
-    overflow: hidden !important;
-    padding: 0 !important;
+  background: #fff;
+  border: 1.5px solid #d0e8dc;
+  border-left: 5px solid #7ecfa3;
+  border-radius: 14px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 6px rgba(67,160,71,0.06);
+  overflow: hidden;
+  transition: box-shadow 0.18s, border 0.18s, transform 0.12s;
+  cursor: pointer;
+}
+.historico-item:hover, .historico-item:active {
+  box-shadow: 0 4px 18px rgba(67,160,71,0.13);
+  border-left: 5px solid #43a047;
+  background: #f7fcf9;
+  transform: translateY(-2px) scale(1.01);
 }
 .historico-item-content {
-    padding: 12px 12px 8px 12px !important;
-    display: flex !important;
-    justify-content: space-between !important;
-    align-items: flex-start !important;
+  padding: 16px 16px 8px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
 }
 .historico-item strong {
-    color: #219150 !important;
-    font-size: 1.05rem !important;
-    font-weight: 600 !important;
+  color: #219150;
+  font-size: 1.08rem;
+  font-weight: 600;
 }
 .historico-info {
-    color: #388e3c !important;
-    font-size: 0.97rem !important;
-    margin: 6px 0 0 0 !important;
+  color: #388e3c;
+  font-size: 0.98rem;
+  margin: 6px 0 0 0;
 }
 .historico-data {
-    color: #607d8b !important;
-    font-size: 0.93rem !important;
-    margin-top: 7px !important;
-    font-style: italic !important;
+  color: #8ca1b3;
+  font-size: 0.93rem;
+  margin-top: 7px;
+  font-style: italic;
 }
 .badge-coletado {
-    background: #43a047 !important;
-    color: white !important;
-    padding: 4px 12px !important;
-    border-radius: 12px !important;
-    font-size: 0.93rem !important;
-    font-weight: 500 !important;
-    box-shadow: none !important;
-    margin-top: 4px !important;
-    letter-spacing: 0.3px !important;
-    border: none !important;
-    display: inline-block !important;
+  background: #e8f5e9;
+  color: #43a047;
+  padding: 5px 14px;
+  border-radius: 12px;
+  font-size: 0.98rem;
+  font-weight: 600;
+  box-shadow: 0 1px 4px rgba(67,160,71,0.07);
+  margin-top: 4px;
+  letter-spacing: 0.4px;
+  border: 1.5px solid #b2dfdb;
+  display: inline-block;
+  transition: background 0.18s, color 0.18s;
 }
-@media (max-width: 600px) {
-    .historico-item-content { padding: 8px 6px 6px 8px !important; }
-    .historico-item { border-radius: 8px !important; }
-    .badge-coletado { font-size: 0.89rem !important; padding: 3px 8px !important; }
+.historico-item:hover .badge-coletado, .historico-item:active .badge-coletado {
+  background: #43a047;
+  color: #fff;
 }
   
-#catador-only-fab {
-  margin-bottom: 0;
+/* --- ESTATÍSTICAS DO HISTÓRICO --- */
+.historico-header {
+  background: linear-gradient(135deg, #e8f5e9 80%, #b2dfdb 100%);
+  color: #219150;
+  padding: 24px 12px 18px 12px;
+  text-align: center;
+  border-radius: 0 0 24px 24px;
+  margin-bottom: 18px;
+  box-shadow: 0 2px 12px rgba(67,160,71,0.07);
 }
-#filtro-raio-container {
-  min-height: 48px;
-  height: 48px;
-  margin-bottom: 8px;
+.historico-header h2 {
+  font-size: 2rem;
+  font-weight: 800;
+  margin-bottom: 4px;
+  letter-spacing: 0.5px;
+  color: #219150;
+  text-shadow: 0 2px 8px #b2dfdb44;
+}
+.historico-header p {
+  font-size: 1.08rem;
+  opacity: 0.97;
+  color: #43a047;
+  margin: 0 0 8px 0;
+}
+.historico-stats {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 18px;
+  padding: 0 8px;
+}
+.stat-card {
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 2px 12px rgba(67,160,71,0.08);
+  padding: 28px 0 18px 0;
+  text-align: center;
+  min-width: 180px;
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: box-shadow 0.18s, transform 0.12s;
+}
+.stat-card:hover {
+  box-shadow: 0 6px 24px rgba(67,160,71,0.13);
+  transform: translateY(-2px) scale(1.01);
+}
+.stat-number {
+  font-size: 2.4rem;
+  font-weight: bold;
+  color: #219150;
+  margin-bottom: 2px;
+  letter-spacing: 0.5px;
+  text-shadow: 0 2px 8px #b2dfdb33;
+}
+.stat-label {
+  font-size: 1.13rem;
+  color: #43a047;
+  margin-top: 2px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
 }
   

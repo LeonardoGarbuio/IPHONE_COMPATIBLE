@@ -14,8 +14,6 @@
   <link rel="stylesheet" href="/css/index.css">
   <!-- Ícones Material Design -->
   <link rel="stylesheet" href="/css/materialdesignicons.min.css">
-  <!-- Leaflet Routing Machine CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css">
   <style>
     /* Container do Google Maps */
     .map-center-container {
@@ -80,6 +78,9 @@
     }
     #catador-dashboard input, #catador-dashboard select {
       font-family: 'Segoe UI', Arial, sans-serif;
+    }
+    .leaflet-routing-container {
+      z-index: 9999 !important;
     }
   </style>
 </head>
@@ -163,9 +164,8 @@
           <div class="map-center-container">
             <div style="position:relative;width:100%;max-width:900px;">
               <!-- FABs do catador -->
-              <div id="espaco-fixo-entre-card-e-botoes" style="height:48px;"></div>
               <div id="catador-only-fab" style="display:none;">
-                <div id="catador-fab-group" style="display:flex;justify-content:center;gap:18px;">
+                <div id="catador-fab-group" style="position:absolute;left:50%;transform:translateX(-50%);top:-36px;z-index:999;display:flex;gap:18px;">
                   <button id="btn-update-location-fab" title="Atualizar minha localização" style="background:#43a047;color:#fff;border:none;border-radius:50%;width:56px;height:56px;box-shadow:0 4px 16px rgba(76,175,80,0.18);font-size:28px;cursor:pointer;display:flex;align-items:center;justify-content:center;"><i class="mdi mdi-crosshairs-gps"></i></button>
                   <button id="btn-reativar-location-fab" title="Reativar minha localização" style="background:#1976d2;color:#fff;border:none;border-radius:50%;width:56px;height:56px;box-shadow:0 4px 16px rgba(25,118,210,0.18);font-size:28px;cursor:pointer;display:flex;align-items:center;justify-content:center;"><i class="mdi mdi-crosshairs"></i></button>
                   <button id="btn-remove-location-fab" title="Remover minha localização" style="background:#e53935;color:#fff;border:none;border-radius:50%;width:56px;height:56px;box-shadow:0 4px 16px rgba(229,57,53,0.18);font-size:28px;cursor:pointer;display:flex;align-items:center;justify-content:center;"><i class="mdi mdi-map-marker-off"></i></button>
@@ -253,8 +253,8 @@
   <!-- Adicione os scripts do Leaflet -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-  <!-- Leaflet Routing Machine JS -->
-  <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
+  <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
   
   <script>
     // DEBUG: Log visual ao entrar na index

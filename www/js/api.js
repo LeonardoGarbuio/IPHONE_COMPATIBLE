@@ -121,6 +121,8 @@ class GreenTechAPI {
 
     // Histórico de coletas do catador
     async getHistoricoColetas(catador_id) {
+        // Garante que o token está atualizado
+        this.token = localStorage.getItem('greentech_token');
         return await this.request(`/materials/historico/coletas?catador_id=${catador_id}`);
     }
 

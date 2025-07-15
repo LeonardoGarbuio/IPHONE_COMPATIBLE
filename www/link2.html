@@ -110,6 +110,34 @@
     <!-- App principal -->
     <script type="text/javascript" src="/js/app.js"></script>
     <script src="cordova.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const btn = document.getElementById('btn-get-location');
+        const latInput = document.getElementById('latitude');
+        const lngInput = document.getElementById('longitude');
+        const status = document.getElementById('location-status');
+        if (btn) {
+            btn.onclick = function() {
+                if (!navigator.geolocation) {
+                    status.textContent = 'Geolocalização não suportada neste navegador.';
+                    status.style.color = '#e53935';
+                    return;
+                }
+                status.textContent = 'Obtendo localização...';
+                status.style.color = '#388e3c';
+                navigator.geolocation.getCurrentPosition(function(pos) {
+                    latInput.value = pos.coords.latitude;
+                    lngInput.value = pos.coords.longitude;
+                    status.textContent = 'Localização preenchida com sucesso!';
+                    status.style.color = '#388e3c';
+                }, function(err) {
+                    status.textContent = 'Não foi possível obter localização: ' + err.message;
+                    status.style.color = '#e53935';
+                });
+            };
+        }
+    });
+    </script>
 </body>
 
 </html>

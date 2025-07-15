@@ -10,11 +10,10 @@ class GreenTechApp {
     // Inicializa o app
     async init() {
         await this.loadMaterials();
-        // Remover chamada global de setupEventListeners()
-        // this.setupEventListeners();
+        this.setupEventListeners();
         this.updateStats();
         this.updateHomeStats();
-        await this.renderHistoricoColetas(); // Chamar renderHistoricoColetas ao entrar na tela de estatísticas
+        await this.renderHistoricoColetas();
     }
 
     // Carrega materiais do backend
@@ -183,55 +182,52 @@ class GreenTechApp {
     // Renderiza histórico de coletas
     async renderHistoricoDetalhado() {
         const historicoLista = document.getElementById('historico-lista');
+        if (!historicoLista) {
+            console.warn('[DEBUG] Container do histórico não encontrado!');
+            return;
+        }
+        const user = this.api.getCurrentUser();
+        if (!user || user.perfil !== 'catador') {
+            historicoLista.innerHTML = `<div class="text-align-center"><i class="mdi mdi-history" style="font-size: 3rem; color: #ccc;"></i><p>Nenhuma coleta registrada ainda</p></div>`;
+            console.warn('[DEBUG] Usuário não autenticado ou não é catador!');
+            return;
+        }
+        const historico = await this.api.getHistoricoColetas(user.id);
+        console.log('[DEBUG] HISTORICO retornado da API:', historico);
+        const materiais = historico.coletas || [];
+        // Calcular estatísticas
         const totalColetas = document.getElementById('total-coletas');
         const pesoTotal = document.getElementById('peso-total');
-        if (!historicoLista) return;
-        try {
-            const user = this.api.getCurrentUser();
-            if (!user || user.perfil !== 'catador') {
-                historicoLista.innerHTML = `<div class="text-align-center"><i class="mdi mdi-history" style="font-size: 3rem; color: #ccc;"></i><p>Nenhuma coleta registrada ainda</p></div>`;
-                if (totalColetas) totalColetas.textContent = '0';
-                if (pesoTotal) pesoTotal.textContent = '0.0 kg';
-                return;
-            }
-            // Buscar histórico diretamente do endpoint correto
-            const historico = await this.api.getHistoricoColetas(user.id);
-            const materiais = historico.coletas || [];
-            // Calcular estatísticas
-            const total = materiais.length;
-            const peso = materiais.reduce((sum, m) => sum + (parseFloat(m.peso) || 0), 0);
-            if (totalColetas) totalColetas.textContent = total;
-            if (pesoTotal) pesoTotal.textContent = peso.toFixed(1) + ' kg';
-            if (materiais.length === 0) {
-                historicoLista.innerHTML = `<div class="text-align-center"><i class="mdi mdi-history" style="font-size: 3rem; color: #ccc;"></i><p>Nenhuma coleta registrada ainda</p></div>`;
-                return;
-            }
-            const historicoHTML = materiais
-                .sort((a, b) => new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at))
-                .map(material => `
-                    <div class="historico-item">
-                        <div class="historico-item-content">
-                            <div>
-                                <strong>${this.getTipoDisplayName(material.tipo)}</strong>
-                                <div class="historico-info">
-                                    Quantidade: ${material.quantidade}
-                                    ${material.peso ? ` | Peso: ${material.peso} kg` : ''}
-                                </div>
-                                <div class="historico-data">
-                                    Coletado em: ${material.updated_at ? new Date(material.updated_at).toLocaleDateString('pt-BR') : (material.created_at ? new Date(material.created_at).toLocaleDateString('pt-BR') : '-')}
-                                </div>
+        const total = materiais.length;
+        const peso = materiais.reduce((sum, m) => sum + (parseFloat(m.peso) || 0), 0);
+        if (totalColetas) totalColetas.textContent = total;
+        if (pesoTotal) pesoTotal.textContent = peso.toFixed(1) + ' kg';
+        if (materiais.length === 0) {
+            historicoLista.innerHTML = `<div class="text-align-center"><i class="mdi mdi-history" style="font-size: 3rem; color: #ccc;"></i><p>Nenhuma coleta registrada ainda</p></div>`;
+            return;
+        }
+        const historicoHTML = materiais
+            .sort((a, b) => new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at))
+            .map(material => `
+                <div class="historico-item">
+                    <div class="historico-item-content">
+                        <div>
+                            <strong>${this.getTipoDisplayName(material.tipo)}</strong>
+                            <div class="historico-info">
+                                Quantidade: ${material.quantidade}
+                                ${material.peso ? ` | Peso: ${material.peso} kg` : ''}
                             </div>
-                            <div>
-                                <span class="badge-coletado">Coletado</span>
+                            <div class="historico-data">
+                                Coletado em: ${material.updated_at ? new Date(material.updated_at).toLocaleDateString('pt-BR') : (material.created_at ? new Date(material.created_at).toLocaleDateString('pt-BR') : '-')}
                             </div>
                         </div>
+                        <div>
+                            <span class="badge-coletado">Coletado</span>
+                        </div>
                     </div>
-                `).join('');
-            historicoLista.innerHTML = historicoHTML;
-        } catch (error) {
-            console.error('Erro ao carregar histórico:', error);
-            historicoLista.innerHTML = `<div class="text-align-center"><i class="mdi mdi-alert" style="font-size: 3rem; color: #f44336;"></i><p>Erro ao carregar histórico</p></div>`;
-        }
+                </div>
+            `).join('');
+        historicoLista.innerHTML = historicoHTML;
     }
 
     // Converte tipo para nome de exibição
@@ -277,37 +273,37 @@ class GreenTechApp {
                 e.preventDefault();
                 e.stopPropagation();
                 console.log('[DEBUG] Botão de adicionar material clicado');
+                
                 // Pega os dados do formulário manualmente
                 const form = document.getElementById('add-material-form');
                 if (form) {
-                    // Antes de permitir o cadastro, verifica se localização foi preenchida
-                    const latInput = document.getElementById('latitude');
-                    const lngInput = document.getElementById('longitude');
-                    const status = document.getElementById('location-status');
-                    const lat = latInput ? latInput.value : '';
-                    const lng = lngInput ? lngInput.value : '';
-                    if (!lat || !lng) {
-                        alert('Por favor, clique em "Usar minha localização" para preencher a latitude e longitude antes de cadastrar.');
-                        if (status) {
-                            status.textContent = 'Preencha a localização antes de cadastrar!';
-                            status.style.color = '#e53935';
-                        }
-                        return;
-                    }
                     const formData = new FormData(form);
                     const material = {
                         tipo: formData.get('tipo'),
                         quantidade: formData.get('quantidade'),
                         peso: formData.get('peso'),
-                        descricao: formData.get('descricao'),
-                        latitude: lat,
-                        longitude: lng
+                        descricao: formData.get('descricao')
                     };
+                    
                     console.log('[DEBUG] Material extraído do formulário (via botão):', material);
+                    
                     if (!material.tipo || !material.quantidade) {
                         alert('Por favor, preencha os campos obrigatórios.');
                         return;
                     }
+                    
+                    // Pega latitude/longitude
+                    const latInput = document.getElementById('latitude');
+                    const lngInput = document.getElementById('longitude');
+                    const lat = latInput ? latInput.value : '';
+                    const lng = lngInput ? lngInput.value : '';
+                    
+                    if (lat && lng) {
+                        material.latitude = lat;
+                        material.longitude = lng;
+                        console.log('[DEBUG] Latitude enviada:', lat, 'Longitude enviada:', lng);
+                    }
+                    
                     // Chama a função de adicionar material
                     this.handleAddMaterial({ target: form, preventDefault: () => {} });
                 }
@@ -337,7 +333,30 @@ class GreenTechApp {
         });
 
         // Botão de localização
-        // (Removido o listener direto do botão para evitar duplicidade)
+        const btnLocation = document.getElementById('btn-get-location');
+        const latInput = document.getElementById('latitude');
+        const lngInput = document.getElementById('longitude');
+        const status = document.getElementById('location-status');
+        if (btnLocation) {
+            btnLocation.onclick = function() {
+                if (!navigator.geolocation) {
+                    status.textContent = 'Geolocalização não suportada neste navegador.';
+                    status.style.color = '#e53935';
+                    return;
+                }
+                status.textContent = 'Obtendo localização...';
+                status.style.color = '#388e3c';
+                navigator.geolocation.getCurrentPosition(function(pos) {
+                    latInput.value = pos.coords.latitude;
+                    lngInput.value = pos.coords.longitude;
+                    status.textContent = 'Localização preenchida com sucesso!';
+                    status.style.color = '#388e3c';
+                }, function(err) {
+                    status.textContent = 'Não foi possível obter localização: ' + err.message;
+                    status.style.color = '#e53935';
+                });
+            };
+        }
     }
 
     // Manipula adição de material
@@ -361,13 +380,19 @@ class GreenTechApp {
         console.log('[DEBUG] Valor do input latitude:', lat);
         console.log('[DEBUG] Valor do input longitude:', lng);
 
-        if (lat && lng && !isNaN(Number(lat)) && !isNaN(Number(lng))) {
-            material.latitude = Number(lat);
-            material.longitude = Number(lng);
-            console.log('[Cadastro] Latitude enviada:', material.latitude, 'Longitude enviada:', material.longitude);
-        } else {
-            console.log('[Cadastro] Localização não preenchida ou inválida, não será enviada.');
+        // NOVA VALIDAÇÃO: impede cadastro sem localização
+        if (!lat || !lng || isNaN(Number(lat)) || isNaN(Number(lng))) {
+            alert('Por favor, clique em "Usar minha localização" para preencher a latitude e longitude antes de cadastrar.');
+            const status = document.getElementById('location-status');
+            if (status) {
+                status.textContent = 'Preencha a localização antes de cadastrar!';
+                status.style.color = '#e53935';
+            }
+            return;
         }
+        material.latitude = Number(lat);
+        material.longitude = Number(lng);
+        console.log('[Cadastro] Latitude enviada:', material.latitude, 'Longitude enviada:', material.longitude);
 
         console.log('[DEBUG] Objeto material FINAL a ser enviado:', material);
 
@@ -402,6 +427,8 @@ class GreenTechApp {
             // Limpa campos de localização
             if (latInput) latInput.value = '';
             if (lngInput) lngInput.value = '';
+            const status = document.getElementById('location-status');
+            if (status) status.textContent = '';
             
             console.log('[Cadastro] Material adicionado com sucesso!');
             
@@ -569,281 +596,9 @@ class GreenTechApp {
 
 }
 
-// --- INÍCIO: Função para traçar rota no mapa usando Leaflet Routing Machine ---
-let routingControl = null;
-function mostrarRotaNoMapa(origem, destino) {
-    // Converte para número se vier como string
-    if (origem && destino) {
-        origem.lat = Number(origem.lat);
-        origem.lng = Number(origem.lng);
-        destino.lat = Number(destino.lat);
-        destino.lng = Number(destino.lng);
-    }
-    if (!window._greentech_map) {
-        console.error('[ROTA] Mapa não está inicializado!');
-        alert('Mapa não carregado!');
-        return;
-    }
-    if (!origem || !destino) {
-        console.error('[ROTA] Origem ou destino não definidos:', origem, destino);
-        alert('Não foi possível obter a localização de origem ou destino.');
-        return;
-    }
-    if (
-        typeof origem.lat !== 'number' || typeof origem.lng !== 'number' ||
-        typeof destino.lat !== 'number' || typeof destino.lng !== 'number' ||
-        isNaN(origem.lat) || isNaN(origem.lng) || isNaN(destino.lat) || isNaN(destino.lng)
-    ) {
-        console.error('[ROTA] Coordenadas inválidas:', origem, destino);
-        alert('Coordenadas inválidas para traçar a rota.');
-        return;
-    }
-    console.log('[ROTA] Parâmetros recebidos para rota:', origem, destino);
-    if (routingControl && window._greentech_map) {
-        window._greentech_map.removeControl(routingControl);
-    }
-    try {
-        routingControl = L.Routing.control({
-            waypoints: [
-                L.latLng(origem.lat, origem.lng),
-                L.latLng(destino.lat, destino.lng)
-            ],
-            routeWhileDragging: false,
-            draggableWaypoints: false,
-            addWaypoints: false,
-            show: false,
-            createMarker: function() { return null; }
-        }).addTo(window._greentech_map);
-        console.log('[ROTA] Rota traçada no mapa:', origem, destino);
-    } catch (err) {
-        console.error('[ROTA] Erro ao traçar rota:', err);
-        alert('Erro ao traçar rota no mapa. Verifique sua conexão ou tente novamente.');
-    }
-}
-// --- FIM: Função para traçar rota no mapa ---
-
-// Função global para aceitar material (catador)
-window.aceitarMaterial = async function(materialId) {
-    console.log('[DEBUG] aceitarMaterial chamado para materialId:', materialId);
-    const user = window.GreenTechAPI.getCurrentUser();
-    console.log('[DEBUG] Usuário atual em aceitarMaterial:', user);
-    if (!user || user.perfil !== 'catador') return;
-    try {
-        const apiUrl = window.GreenTechAPI.baseURL + `/materials/${materialId}/reservar`;
-        console.log('[DEBUG] Fazendo requisição PUT para:', apiUrl);
-        const response = await fetch(apiUrl, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${window.GreenTechAPI.token}`
-            }
-        });
-        console.log('[DEBUG] Resposta da requisição:', response);
-        if (!response.ok) {
-            let data = {};
-            try { data = await response.json(); } catch(e){}
-            console.log('[DEBUG] Erro ao aceitar material:', data);
-            return;
-        }
-        // Buscar dados do material aceito para pegar lat/lng
-        let material = null;
-        try {
-            const resMat = await fetch(window.GreenTechAPI.baseURL + `/materials/${materialId}`);
-            const dataMat = await resMat.json();
-            material = dataMat.material || null;
-        } catch (e) { material = null; }
-        // Traçar rota se possível
-        if (!material || !material.latitude || !material.longitude) {
-            alert('O material não possui localização cadastrada. Não é possível traçar rota.');
-            return;
-        }
-        if (!navigator.geolocation) {
-            alert('Seu navegador não suporta geolocalização.');
-            return;
-        }
-        navigator.geolocation.getCurrentPosition(function(pos) {
-            if (!pos || !pos.coords || isNaN(pos.coords.latitude) || isNaN(pos.coords.longitude)) {
-                alert('Não foi possível obter sua localização atual.');
-                return;
-            }
-            mostrarRotaNoMapa(
-                { lat: pos.coords.latitude, lng: pos.coords.longitude },
-                { lat: material.latitude, lng: material.longitude }
-            );
-        }, function(err) {
-            alert('Erro ao obter sua localização: ' + (err && err.message ? err.message : 'Desconhecido'));
-        });
-        // Não tenta atualizar array ou chamar filtrarMateriaisReativo
-        // Apenas atualiza a busca na página link3.html com delay
-        const searchInput = document.getElementById('search-input');
-        const filterBtn = document.querySelector('.filter-btn.active');
-        const query = searchInput ? searchInput.value : '';
-        const filter = filterBtn ? filterBtn.dataset.filter : 'all';
-        setTimeout(() => {
-            console.log('[DEBUG] Chamando performSearch após aceitar:', query, filter);
-            if (window.GreenTechApp && window.GreenTechApp.performSearch) {
-                window.GreenTechApp.performSearch(query, filter);
-            }
-        }, 700);
-    } catch (e) {
-        console.error('[DEBUG] Erro inesperado em aceitarMaterial:', e);
-    }
-}
-
-// Função global para coletar material (catador)
-window.coletarMaterial = async function(materialId) {
-    const user = window.GreenTechAPI.getCurrentUser();
-    if (!user || user.perfil !== 'catador') {
-        window.showFeedback('Apenas catadores podem coletar materiais.', 'error');
-        return;
-    }
-    try {
-        const apiUrl = window.GreenTechAPI.baseURL + `/materials/${materialId}/coletar`;
-        console.log('[DEBUG] Fazendo requisição PUT para:', apiUrl);
-        const response = await fetch(apiUrl, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${window.GreenTechAPI.token}`
-            }
-        });
-        let data = {};
-        try { data = await response.json(); } catch(e) { data = {}; }
-        if (!response.ok || !data.success) {
-            window.showFeedback((data && data.error) ? data.error : 'Erro ao coletar material.', 'error');
-            return;
-        }
-        window.showFeedback('Material coletado com sucesso!', 'success');
-        // Atualizar histórico e lista de materiais após coletar
-        if (window.GreenTechApp && window.GreenTechApp.loadMaterials) {
-            await window.GreenTechApp.loadMaterials();
-            if (window.GreenTechApp.updateStats) window.GreenTechApp.updateStats();
-            if (window.GreenTechApp.updateHomeStats) window.GreenTechApp.updateHomeStats();
-        }
-        if (window.GreenTechApp && window.GreenTechApp.renderHistoricoColetas) {
-            await window.GreenTechApp.renderHistoricoColetas();
-        }
-        // Atualizar painel de coleta do dia, se existir
-        if (window._greentech_updateCatadorDashboard) {
-            window._greentech_updateCatadorDashboard();
-        }
-        // Atualizar lista de busca para sumir imediatamente
-        const searchInput = document.getElementById('search-input');
-        const filterBtn = document.querySelector('.filter-btn.active');
-        const query = searchInput ? searchInput.value : '';
-        const filter = filterBtn ? filterBtn.dataset.filter : 'all';
-        if (window.GreenTechApp && window.GreenTechApp.performSearch) {
-            setTimeout(() => {
-                window.GreenTechApp.performSearch(query, filter);
-            }, 300);
-        }
-        console.log('[DEBUG] Coleta realizada, histórico e lista atualizados.');
-    } catch (e) {
-        console.error('[DEBUG] Erro ao coletar material:', e);
-        window.showFeedback('Erro ao coletar material.', 'error');
-    }
-};
-
 // Função para contatar coletor (placeholder)
 function contactCollector(materialId) {
     alert(`Funcionalidade de contato para material ${materialId} será implementada em breve!`);
-}
-
-// Função para exibir/ocultar elementos da home conforme perfil
-function ajustarHomePorPerfil() {
-    const user = window.GreenTechAPI && window.GreenTechAPI.getCurrentUser && window.GreenTechAPI.getCurrentUser();
-    const fab = document.getElementById('catador-only-fab');
-    const filtroRaio = document.getElementById('filtro-raio-container');
-    const quickStats = document.querySelector('.quick-stats');
-    if (user && user.perfil === 'catador') {
-        if (fab) fab.style.display = 'block';
-        if (filtroRaio) filtroRaio.style.display = 'none';
-        if (quickStats) quickStats.style.display = 'none';
-    } else {
-        if (fab) fab.style.display = 'none';
-        if (filtroRaio) filtroRaio.style.display = '';
-        if (quickStats) quickStats.style.display = '';
-    }
-}
-
-function atribuirListenersCatadorFABs() {
-    const btnUpdate = document.getElementById('btn-update-location-fab');
-    const btnReativar = document.getElementById('btn-reativar-location-fab');
-    const btnRemove = document.getElementById('btn-remove-location-fab');
-    if (btnUpdate) btnUpdate.onclick = function() {
-        const user = window.GreenTechAPI.getCurrentUser && window.GreenTechAPI.getCurrentUser();
-        if (user && user.perfil === 'catador') {
-            if (!navigator.geolocation) {
-                showFeedback('Geolocalização não suportada.', 'error');
-                return;
-            }
-            navigator.geolocation.getCurrentPosition(function(pos) {
-                fetch(`${BASE_URL}/catadores/${user.id}/localizacao`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${window.GreenTechAPI.token}`
-                    },
-                    body: JSON.stringify({ latitude: pos.coords.latitude, longitude: pos.coords.longitude })
-                })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        showFeedback('Localização atualizada com sucesso!', 'success');
-                        window._greentech_userLat = pos.coords.latitude;
-                        window._greentech_userLng = pos.coords.longitude;
-                        window.initGreenTechMap(pos.coords.latitude, pos.coords.longitude);
-                    } else {
-                        showFeedback('Erro ao atualizar localização.', 'error');
-                    }
-                })
-                .catch(() => showFeedback('Erro ao atualizar localização.', 'error'));
-            }, function(err) {
-                showFeedback('Não foi possível obter localização: ' + err.message, 'error');
-            });
-        } else {
-            showFeedback('Apenas catadores podem atualizar localização.', 'error');
-        }
-    };
-    if (btnReativar) btnReativar.onclick = function() {
-        const user = window.GreenTechAPI.getCurrentUser && window.GreenTechAPI.getCurrentUser();
-        if (user && user.perfil === 'catador') {
-            window.reativarLocalizacaoCatador(user.id);
-        } else {
-            showFeedback('Apenas catadores podem reativar localização.', 'error');
-        }
-    };
-    if (btnRemove) btnRemove.onclick = function() {
-        const user = window.GreenTechAPI.getCurrentUser && window.GreenTechAPI.getCurrentUser();
-        if (user && user.perfil === 'catador') {
-            fetch(`${BASE_URL}/catadores/${user.id}/localizacao`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${window.GreenTechAPI.token}`
-                },
-                body: JSON.stringify({ latitude: null, longitude: null })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    showFeedback('Localização removida com sucesso!', 'success');
-                    if (window._greentech_map && window._greentech_userMarker) {
-                        window._greentech_map.removeLayer(window._greentech_userMarker);
-                        window._greentech_userMarker = null;
-                    }
-                    if (window._greentech_markers) {
-                        window._greentech_markers = window._greentech_markers.filter(m => m !== window._greentech_userMarker);
-                    }
-                } else {
-                    showFeedback('Erro ao remover localização.', 'error');
-                }
-            })
-            .catch(() => showFeedback('Erro ao remover localização.', 'error'));
-        } else {
-            showFeedback('Apenas catadores podem remover localização.', 'error');
-        }
-    };
 }
 
 // Inicializa o app quando o DOM estiver pronto
@@ -1129,11 +884,6 @@ document.addEventListener('page:afterin', function(e) {
         });
         console.log('[DEBUG] Event listener do logout configurado (page:afterin)');
     }
-    const page = e.target;
-    const pageName = page && page.getAttribute('data-name');
-    if (pageName === 'index') {
-        setTimeout(ajustarHomePorPerfil, 100);
-    }
 });
 
 // Para compatibilidade com Cordova
@@ -1158,6 +908,11 @@ function calcularDistanciaKm(lat1, lon1, lat2, lon2) {
 
 // Função para inicializar e atualizar o mapa
 window.initGreenTechMap = function(userLat, userLng) {
+    // Só reinicializa se não existe ou mudou a localização
+    if (window._greentech_map && window._greentech_userLat === userLat && window._greentech_userLng === userLng) {
+        // Já está correto, não faz nada
+        return;
+    }
     // Antes de criar o mapa, remova todos os outros mapas duplicados
     document.querySelectorAll('#map').forEach((el, idx) => {
         if (idx > 0) el.parentNode && el.parentNode.removeChild(el);
@@ -1193,8 +948,6 @@ window.initGreenTechMap = function(userLat, userLng) {
                 }
                 return;
             }
-            console.log('[Catadores] Localização de referência:', userLat, userLng, '| Raio:', filtro);
-            console.log('[Catadores] Lista recebida:', data.catadores.map(c => ({ id: c.id, nome: c.nome, lat: c.latitude, lng: c.longitude })));
             let count = 0;
             data.catadores.forEach(catador => {
                 if (catador.latitude && catador.longitude) {
@@ -1216,7 +969,6 @@ window.initGreenTechMap = function(userLat, userLng) {
                 }
             });
             if (count === 0) {
-                // Só mostra mensagem se NÃO for catador
                 if (!user || user.perfil !== 'catador') {
                     document.getElementById('map-message').textContent = 'Nenhum catador encontrado nesse raio.';
                     document.getElementById('map-message').style.display = 'block';
@@ -1252,53 +1004,22 @@ window.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// Inicializa o mapa no primeiro carregamento (F5, reload)
-document.addEventListener('DOMContentLoaded', function() {
-    // Só inicializa se estiver na home
-    const page = document.querySelector('.page[data-name="index"]');
-    if (page && document.getElementById('map')) {
-        setTimeout(() => {
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(function(position) {
-                    window._greentech_userLat = position.coords.latitude;
-                    window._greentech_userLng = position.coords.longitude;
-                    window.initGreenTechMap(window._greentech_userLat, window._greentech_userLng);
-                }, function(error) {
-                    window._greentech_userLat = -25.4284;
-                    window._greentech_userLng = -49.2733;
-                    window.initGreenTechMap(window._greentech_userLat, window._greentech_userLng);
-                });
-            } else {
-                window._greentech_userLat = -25.4284;
-                window._greentech_userLng = -49.2733;
-                window.initGreenTechMap(window._greentech_userLat, window._greentech_userLng);
-            }
-        }, 200);
-    }
-});
-
-// E também ao navegar para a home (SPA)
-document.addEventListener('page:init', function(e) {
-    const page = e.target;
-    const pageName = page && page.getAttribute('data-name');
-    if (pageName === 'index') {
-        setTimeout(() => {
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(function(position) {
-                    window._greentech_userLat = position.coords.latitude;
-                    window._greentech_userLng = position.coords.longitude;
-                    window.initGreenTechMap(window._greentech_userLat, window._greentech_userLng);
-                }, function(error) {
-                    window._greentech_userLat = -25.4284;
-                    window._greentech_userLng = -49.2733;
-                    window.initGreenTechMap(window._greentech_userLat, window._greentech_userLng);
-                });
-            } else {
-                window._greentech_userLat = -25.4284;
-                window._greentech_userLng = -49.2733;
-                window.initGreenTechMap(window._greentech_userLat, window._greentech_userLng);
-            }
-        }, 200);
+// Inicializa o mapa ao carregar a página
+window.addEventListener('DOMContentLoaded', function() {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(function(position) {
+            window._greentech_userLat = position.coords.latitude;
+            window._greentech_userLng = position.coords.longitude;
+            window.initGreenTechMap(window._greentech_userLat, window._greentech_userLng);
+        }, function(error) {
+            window._greentech_userLat = -25.4284;
+            window._greentech_userLng = -49.2733;
+            window.initGreenTechMap(window._greentech_userLat, window._greentech_userLng);
+        });
+    } else {
+        window._greentech_userLat = -25.4284;
+        window._greentech_userLng = -49.2733;
+        window.initGreenTechMap(window._greentech_userLat, window._greentech_userLng);
     }
 });
 
@@ -1451,97 +1172,12 @@ window.renderMateriaisLista = function(materiais, userLat, userLng) {
             <span><b>Distância:</b> ${dist} km</span>
             <span><b>Status:</b> ${mat.status || 'disponivel'}</span>
             <div style="display:flex;gap:10px;margin-top:6px;">
-                <button onclick="mostrarRotaNoMapa(${mat.latitude},${mat.longitude})" style="background:#388e3c;color:#fff;border:none;border-radius:6px;padding:6px 14px;cursor:pointer;">Rota</button>
+                <button onclick="openRoute(${mat.latitude},${mat.longitude})" style="background:#388e3c;color:#fff;border:none;border-radius:6px;padding:6px 14px;cursor:pointer;">Rota</button>
                 <button onclick="contactMaterialOwner('${mat.telefone || ''}','${mat.email || ''}')" style="background:#1976d2;color:#fff;border:none;border-radius:6px;padding:6px 14px;cursor:pointer;">Contato</button>
                 ${actionButton}
             </div>
         </div>`;
     }).join('');
-};
-
-// Função global para mostrar rota no mapa do app
-window.mostrarRotaNoMapa = function(destLat, destLng) {
-    if (!window._greentech_map) {
-        alert('Mapa não carregado!');
-        return;
-    }
-    if (!navigator.geolocation) {
-        alert('Geolocalização não suportada.');
-        return;
-    }
-    navigator.geolocation.getCurrentPosition(function(pos) {
-        const userLat = pos.coords.latitude;
-        const userLng = pos.coords.longitude;
-        // Remove rota anterior se existir
-        if (window._greentech_routeLine) {
-            window._greentech_map.removeLayer(window._greentech_routeLine);
-        }
-        // Desenha a linha da rota
-        window._greentech_routeLine = L.polyline([[userLat, userLng], [destLat, destLng]], {color: '#1976d2', weight: 5, opacity: 0.8}).addTo(window._greentech_map);
-        // Centraliza o mapa na rota
-        window._greentech_map.fitBounds([[userLat, userLng], [destLat, destLng]], {padding: [40, 40]});
-        // Marcadores de início e fim
-        if (window._greentech_routeStart) window._greentech_map.removeLayer(window._greentech_routeStart);
-        if (window._greentech_routeEnd) window._greentech_map.removeLayer(window._greentech_routeEnd);
-        window._greentech_routeStart = L.marker([userLat, userLng], {title: 'Você'}).addTo(window._greentech_map);
-        window._greentech_routeEnd = L.marker([destLat, destLng], {title: 'Destino'}).addTo(window._greentech_map);
-    }, function() {
-        alert('Não foi possível obter sua localização.');
-    });
-};
-
-// Função global para limpar rota do mapa
-window.limparRotaDoMapa = function() {
-    if (window._greentech_routeLine) window._greentech_map.removeLayer(window._greentech_routeLine);
-    if (window._greentech_routeStart) window._greentech_map.removeLayer(window._greentech_routeStart);
-    if (window._greentech_routeEnd) window._greentech_map.removeLayer(window._greentech_routeEnd);
-};
-
-// Alterar botão 'Rota' em renderMateriaisLista para mostrarRotaNoMapa
-const oldRenderMateriaisLista = window.renderMateriaisLista;
-window.renderMateriaisLista = function(materiais, userLat, userLng) {
-    window._greentech_materiais = materiais;
-    const lista = document.getElementById('materiais-lista');
-    if (!lista) return;
-    if (!materiais || materiais.length === 0) {
-        lista.innerHTML = '<div style="color:#888;text-align:center;padding:24px;">Nenhum material disponível para coleta.</div>';
-        return;
-    }
-    const user = window.GreenTechAPI.getCurrentUser();
-    const isCatador = user && user.perfil === 'catador';
-    lista.innerHTML = materiais.map(mat => {
-        const dist = (mat.latitude && mat.longitude && userLat && userLng) ? calcularDistanciaKm(userLat, userLng, mat.latitude, mat.longitude).toFixed(2) : '--';
-        const isReservadoPorMim = isCatador && mat.status === 'reservado' && mat.catador_id === user.id;
-        const isDisponivel = mat.status === 'disponivel';
-        let actionButton = '';
-        if (isCatador) {
-            if (isReservadoPorMim) {
-                actionButton = `<button onclick="marcarComoColetado(${mat.id})" style="background:#43a047;color:#fff;border:none;border-radius:6px;padding:6px 14px;cursor:pointer;">Marcar como Coletado</button>`;
-            } else if (isDisponivel) {
-                actionButton = `<button onclick="wantCollect(${mat.id})" style="background:#ffb300;color:#fff;border:none;border-radius:6px;padding:6px 14px;cursor:pointer;">Quero coletar</button>`;
-            } else {
-                actionButton = `<span style="color:#888;font-size:12px;">${mat.status === 'reservado' ? 'Reservado' : 'Coletado'}</span>`;
-            }
-        }
-        // Botão Rota chama mostrarRotaNoMapa
-        return `<div data-material-id="${mat.id}" style="background:#f9fbe7;border-radius:12px;padding:16px 18px;margin-bottom:12px;box-shadow:0 2px 8px rgba(76,175,80,0.06);display:flex;flex-direction:column;gap:6px;">
-            <b>${mat.tipo ? GreenTechApp.prototype.getTipoDisplayName(mat.tipo) : 'Material'}</b>
-            <span><b>Quantidade:</b> ${mat.quantidade || '-'}</span>
-            ${mat.peso ? `<span><b>Peso:</b> ${mat.peso} kg</span>` : ''}
-            ${mat.descricao ? `<span><b>Descrição:</b> ${mat.descricao}</span>` : ''}
-            <span><b>Distância:</b> ${dist} km</span>
-            <span><b>Status:</b> ${mat.status || 'disponivel'}</span>
-            <div style="display:flex;gap:10px;margin-top:6px;">
-                <button onclick="mostrarRotaNoMapa(${mat.latitude},${mat.longitude})" style="background:#388e3c;color:#fff;border:none;border-radius:6px;padding:6px 14px;cursor:pointer;">Rota</button>
-                <button onclick="contactMaterialOwner('${mat.telefone || ''}','${mat.email || ''}')" style="background:#1976d2;color:#fff;border:none;border-radius:6px;padding:6px 14px;cursor:pointer;">Contato</button>
-                ${actionButton}
-            </div>
-        </div>`;
-    }).join('');
-    // Adiciona botão Limpar Rota se for catador
-    if (isCatador) {
-        lista.innerHTML += `<div style="text-align:center;margin-top:12px;"><button onclick="limparRotaDoMapa()" style="background:#e53935;color:#fff;border:none;border-radius:8px;padding:8px 22px;font-size:1rem;cursor:pointer;">Limpar Rota</button></div>`;
-    }
 };
 
 // Atualizar lista de materiais disponíveis para coleta
@@ -1635,60 +1271,585 @@ window.addEventListener('DOMContentLoaded', function() {
                             'Authorization': `Bearer ${window.GreenTechAPI.token}`
                         },
                         body: JSON.stringify({ latitude: pos.coords.latitude, longitude: pos.coords.longitude })
-                    });
-                    alert('Localização atualizada com sucesso!');
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            showFeedback('Localização atualizada com sucesso!', 'success');
+                            window._greentech_userLat = pos.coords.latitude;
+                            window._greentech_userLng = pos.coords.longitude;
+                            window.initGreenTechMap(pos.coords.latitude, pos.coords.longitude);
+                        } else {
+                            showFeedback('Erro ao atualizar localização.', 'error');
+                        }
+                    })
+                    .catch(() => showFeedback('Erro ao atualizar localização.', 'error'));
                 }, function(err) {
-                    alert('Erro ao obter localização: ' + err.message);
+                    showFeedback('Não foi possível obter localização: ' + err.message, 'error');
                 });
+            } else {
+                showFeedback('Apenas catadores podem atualizar localização.', 'error');
+            }
+        };
+    }
+    // Botão azul de reativar localização
+    const btnReativar = document.getElementById('btn-reativar-location-fab');
+    if (btnReativar) {
+        btnReativar.onclick = () => {
+            const user = window.GreenTechAPI.getCurrentUser && window.GreenTechAPI.getCurrentUser();
+            if (user && user.perfil === 'catador') {
+                window.reativarLocalizacaoCatador(user.id);
+            } else {
+                showFeedback('Apenas catadores podem reativar localização.', 'error');
+            }
+        };
+    }
+    // Botão vermelho de remover localização
+    const btnRemover = document.getElementById('btn-remove-location-fab');
+    if (btnRemover) {
+        btnRemover.onclick = () => {
+            const user = window.GreenTechAPI.getCurrentUser && window.GreenTechAPI.getCurrentUser();
+            if (user && user.perfil === 'catador') {
+                fetch(`${BASE_URL}/catadores/${user.id}/localizacao`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${window.GreenTechAPI.token}`
+                    },
+                    body: JSON.stringify({ latitude: null, longitude: null })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        showFeedback('Localização removida com sucesso!', 'success');
+                        // Remover marcador do usuário do mapa
+                        if (window._greentech_map && window._greentech_userMarker) {
+                            window._greentech_map.removeLayer(window._greentech_userMarker);
+                            window._greentech_userMarker = null;
+                        }
+                        // Remover do array de marcadores, se existir
+                        if (window._greentech_markers) {
+                            window._greentech_markers = window._greentech_markers.filter(m => m !== window._greentech_userMarker);
+                        }
+                    } else {
+                        showFeedback('Erro ao remover localização.', 'error');
+                    }
+                })
+                .catch(() => showFeedback('Erro ao remover localização.', 'error'));
+            } else {
+                showFeedback('Apenas catadores podem remover localização.', 'error');
             }
         };
     }
 });
 
-// Delegação global para o botão de localização
+// Função global para abrir rota até o material
+window.openRouteMaterial = function(lat, lng) {
+    console.log('[Rota] Latitude usada:', lat, 'Longitude usada:', lng);
+    if (lat && lng) {
+        const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+        window.open(url, '_blank');
+    } else {
+        alert('Localização do material não disponível.');
+    }
+};
 
-document.addEventListener('click', function(e) {
-    if (e.target && e.target.id === 'btn-get-location') {
-        const latInput = document.getElementById('latitude');
-        const lngInput = document.getElementById('longitude');
-        const status = document.getElementById('location-status');
-        console.log('[DEBUG] Clique detectado no botão de localização (btn-get-location) [delegado]');
-        if (!navigator.geolocation) {
-            status.textContent = 'Geolocalização não suportada neste navegador.';
-            status.style.color = '#e53935';
-            console.log('[DEBUG] Geolocalização não suportada');
-            return;
+// Atualizar localização do catador
+window.updateCatadorLocation = function(lat, lng) {
+    window._greentech_userLat = lat;
+    window._greentech_userLng = lng;
+    console.log('[Catador] Localização atualizada:', lat, lng);
+};
+
+// Garante o registro do event listener mesmo em SPAs/Framework7
+
+document.addEventListener('page:init', function (e) {
+    const page = e.target;
+    const pageName = page && page.getAttribute('data-name');
+    if (pageName === 'index') {
+        // 1. Limpa elementos dinâmicos que não pertencem à index
+        document.querySelectorAll('.material-item, .no-results').forEach(el => el && el.remove());
+
+        // 2. Reseta o mapa se necessário
+        if (window._greentech_map) {
+            window._greentech_map.remove();
+            window._greentech_map = null;
         }
-        status.textContent = 'Obtendo localização...';
-        status.style.color = '#388e3c';
-        navigator.geolocation.getCurrentPosition(function(pos) {
-            latInput.value = pos.coords.latitude;
-            lngInput.value = pos.coords.longitude;
-            status.textContent = 'Localização preenchida com sucesso!';
-            status.style.color = '#388e3c';
-            console.log('[APP.JS LOCALIZAÇÃO] Latitude preenchida:', latInput.value);
-            console.log('[APP.JS LOCALIZAÇÃO] Longitude preenchida:', lngInput.value);
-        }, function(err) {
-            status.textContent = 'Não foi possível obter localização: ' + err.message;
-            status.style.color = '#e53935';
-            latInput.value = '';
-            lngInput.value = '';
-            console.log('[APP.JS LOCALIZAÇÃO] Erro ao obter localização:', err.message);
+        // 3. Recria o mapa
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(function(position) {
+                window._greentech_userLat = position.coords.latitude;
+                window._greentech_userLng = position.coords.longitude;
+                window.initGreenTechMap(window._greentech_userLat, window._greentech_userLng);
+            }, function(error) {
+                window._greentech_userLat = -25.4284;
+                window._greentech_userLng = -49.2733;
+                window.initGreenTechMap(window._greentech_userLat, window._greentech_userLng);
+            });
+        }
+
+        // 4. Garante que só os elementos da index estejam visíveis
+        [
+            '#catador-dashboard', '#catador-only-painel', '.dashboard-card', '.quick-stats',
+            '.welcome-section', '.welcome-card', '.toolbar', '.top-nav', '.page-content'
+        ].forEach(sel => {
+            document.querySelectorAll(sel).forEach(el => el && (el.style.display = ''));
         });
-        setTimeout(() => {
-            console.log('[DEBUG] Após clique, latitude:', latInput ? latInput.value : '(input não encontrado)');
-            console.log('[DEBUG] Após clique, longitude:', lngInput ? lngInput.value : '(input não encontrado)');
-        }, 2000);
+
+        // 5. Força atualização dos dados da home
+        if (window.GreenTechApp && window.GreenTechApp.loadMaterials && window.GreenTechApp.updateStats && window.GreenTechApp.updateHomeStats) {
+            window.GreenTechApp.loadMaterials().then(() => {
+                window.GreenTechApp.updateStats();
+                window.GreenTechApp.updateHomeStats();
+            });
+        }
+        // Exibe/oculta elementos conforme o perfil
+        const user = window.GreenTechAPI && window.GreenTechAPI.getCurrentUser && window.GreenTechAPI.getCurrentUser();
+        const fab = document.getElementById('catador-only-fab');
+        const painel = document.getElementById('catador-only-painel');
+        const quickStats = document.querySelector('.quick-stats');
+        const filtroRaio = document.getElementById('filtro-raio-container');
+        const welcomeSection = document.querySelector('.welcome-section');
+
+        if (user && user.perfil === 'catador') {
+            if (fab) fab.style.display = 'block';
+            if (painel) painel.style.display = 'block';
+            if (quickStats) quickStats.style.display = 'none';
+            if (filtroRaio) filtroRaio.style.display = 'none';
+            if (welcomeSection) welcomeSection.style.display = '';
+        } else {
+            if (fab) fab.style.display = 'none';
+            if (painel) painel.style.display = 'none';
+            if (quickStats) quickStats.style.display = '';
+            if (filtroRaio) filtroRaio.style.display = '';
+            if (welcomeSection) welcomeSection.style.display = '';
+        }
+
+        // Reatribui listeners dos FABs apenas se for catador
+        if (user && user.perfil === 'catador' && fab && fab.style.display === 'block') {
+            const btnUpdate = document.getElementById('btn-update-location-fab');
+            const btnReativar = document.getElementById('btn-reativar-location-fab');
+            const btnRemove = document.getElementById('btn-remove-location-fab');
+            
+            if (btnUpdate) btnUpdate.onclick = function() {
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(function(pos) {
+                        window.updateCatadorLocation && window.updateCatadorLocation(pos.coords.latitude, pos.coords.longitude);
+                    }, function(err) {
+                        alert('Não foi possível obter localização: ' + err.message);
+                    });
+                } else {
+                    alert('Geolocalização não suportada.');
+                }
+            };
+            if (btnReativar) btnReativar.onclick = function() { 
+                window.reativarLocalizacaoCatador && window.reativarLocalizacaoCatador(user.id); 
+            };
+            if (btnRemove) btnRemove.onclick = function() { 
+                // Lógica de remover localização
+                if (user && user.perfil === 'catador') {
+                    fetch(`${BASE_URL}/catadores/${user.id}/localizacao`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${window.GreenTechAPI.token}`
+                        },
+                        body: JSON.stringify({ latitude: null, longitude: null })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            showFeedback('Localização removida com sucesso!', 'success');
+                        } else {
+                            showFeedback('Erro ao remover localização.', 'error');
+                        }
+                    })
+                    .catch(() => showFeedback('Erro ao remover localização.', 'error'));
+                }
+            };
+        }
+        // Espaçamento visual entre welcome-section e FABs
+        if (welcomeSection) welcomeSection.style.marginBottom = '24px';
+        if (fab) fab.style.marginTop = '16px';
     }
 });
 
-// Event listener específico para o botão de histórico do catador
+document.addEventListener('page:afterin', function (e) {
+    const page = e.target;
+    const pageName = page && page.getAttribute('data-name');
+    if (pageName === 'index') {
+        // Atualização automática ao voltar para a home
+        if (window.GreenTechApp && window.GreenTechApp.loadMaterials && window.GreenTechApp.updateStats && window.GreenTechApp.updateHomeStats) {
+            window.GreenTechApp.loadMaterials().then(() => {
+                window.GreenTechApp.updateStats();
+                window.GreenTechApp.updateHomeStats();
+            });
+        }
+    }
+});
 
+document.addEventListener('page:beforein', function (e) {
+    const page = e.target;
+    const pageName = page && page.getAttribute('data-name');
+    if (pageName === 'index') {
+        // Atualiza tudo antes da index aparecer
+        if (window.GreenTechApp && window.GreenTechApp.loadMaterials && window.GreenTechApp.updateStats && window.GreenTechApp.updateHomeStats) {
+            window.GreenTechApp.loadMaterials().then(() => {
+                window.GreenTechApp.updateStats();
+                window.GreenTechApp.updateHomeStats();
+            });
+        }
+    }
+});
+
+// Função global para reativar localização do catador
+window.reativarLocalizacaoCatador = function(catadorId) {
+    if (!navigator.geolocation) {
+        showFeedback('Geolocalização não suportada.', 'error');
+        return;
+    }
+    navigator.geolocation.getCurrentPosition(function(pos) {
+        fetch(`${BASE_URL}/catadores/${catadorId}/localizacao`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${window.GreenTechAPI.token}`
+            },
+            body: JSON.stringify({ latitude: Number(pos.coords.latitude), longitude: Number(pos.coords.longitude) })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                showFeedback('Localização reativada com sucesso!', 'success');
+                // Atualizar interface: esconder azul, mostrar vermelho
+                // document.getElementById('btn-reativar-location-fab').style.display = 'none';
+                // document.getElementById('btn-remove-location-fab').style.display = '';
+                // Opcional: atualizar mapa sem recarregar
+            } else {
+                showFeedback('Erro ao reativar localização.', 'error');
+            }
+        })
+        .catch(() => showFeedback('Erro ao reativar localização.', 'error'));
+    }, function(err) {
+        showFeedback('Não foi possível obter localização: ' + err.message, 'error');
+    });
+};
+
+// Garante que o mapa seja destruído ao sair da página para evitar bugs visuais
+window.addEventListener('page:beforeremove', function (e) {
+    if (window._greentech_map) {
+        window._greentech_map.remove();
+        window._greentech_map = null;
+    }
+});
+
+// Adicionar vários logs de debug no fluxo de busca e aceitação
+
+// Sobrescrever performSearch para adicionar debug
+GreenTechApp.prototype.performSearch = async function(query, filter) {
+    console.log('[DEBUG] performSearch chamado:', query, filter);
+    try {
+        const results = await this.searchMaterials(query, filter);
+        console.log('[DEBUG] performSearch - resultados recebidos:', results);
+        this.displaySearchResults(results);
+    } catch (error) {
+        console.error('[DEBUG] Erro na busca:', error);
+        this.displaySearchResults([]);
+    }
+};
+
+// Sobrescrever displaySearchResults para adicionar debug
+GreenTechApp.prototype.displaySearchResults = function(results) {
+    console.log('[DEBUG] displaySearchResults chamado');
+    console.log('[DEBUG] Resultados da busca:', results);
+    const resultsContainer = document.getElementById('search-results');
+    if (!resultsContainer) {
+        console.log('[DEBUG] resultsContainer não encontrado');
+        return;
+    }
+    const materials = results.materials || [];
+    console.log('[DEBUG] Materiais recebidos:', materials);
+    const filteredMaterials = materials.filter(material => material.status !== 'coletado');
+    console.log('[DEBUG] Materiais filtrados:', filteredMaterials);
+    if (filteredMaterials.length === 0) {
+        resultsContainer.innerHTML = `
+            <div class="no-results">
+                <i class="mdi mdi-magnify"></i>
+                <p>Nenhum material encontrado</p>
+            </div>
+        `;
+        return;
+    }
+    const user = window.GreenTechAPI.getCurrentUser();
+    console.log('[DEBUG] Usuário atual:', user);
+    const resultsHTML = filteredMaterials.map(material => {
+        let aceitarBtn = '';
+        if (user && user.perfil === 'catador') {
+            if (material.status === 'disponivel') {
+                aceitarBtn = `<button class="btn-contact" onclick="aceitarMaterial(${material.id})"><i class="mdi mdi-phone"></i> Aceitar</button>`;
+            } else if (material.status === 'reservado') {
+                if (material.catador_id === user.id) {
+                    aceitarBtn = `<button class="btn-contact" disabled style="background:#4caf50;color:#fff;"><i class="mdi mdi-check"></i> Reservado por você</button>`;
+                    aceitarBtn += `<button class="btn-coletar" style="margin-left:8px;background:#1976d2;color:#fff;" onclick="coletarMaterial(${material.id})"><i class="mdi mdi-truck-check"></i> Coletar</button>`;
+                } else {
+                    aceitarBtn = `<button class="btn-contact" disabled style="background:#aaa;color:#fff;"><i class="mdi mdi-lock"></i> Reservado</button>`;
+                }
+            } else if (material.status === 'coletado') {
+                aceitarBtn = `<button class="btn-contact" disabled style="background:#aaa;color:#fff;"><i class="mdi mdi-check-all"></i> Coletado</button>`;
+            }
+        }
+        return `
+            <div class="material-item">
+                <div class="material-info">
+                    <h4>${this.getTipoDisplayName(material.tipo)}</h4>
+                    <p><strong>Quantidade:</strong> ${material.quantidade}</p>
+                    ${material.peso ? `<p><strong>Peso:</strong> ${material.peso} kg</p>` : ''}
+                    ${material.descricao ? `<p><strong>Descrição:</strong> ${material.descricao}</p>` : ''}
+                    <small>Criado em: ${new Date(material.data_criacao).toLocaleDateString('pt-BR')}</small>
+                </div>
+                <div class="material-actions">
+                    ${aceitarBtn}
+                </div>
+            </div>
+        `;
+    }).join('');
+    resultsContainer.innerHTML = resultsHTML;
+    console.log('[DEBUG] HTML dos resultados atualizado');
+};
+
+// Adicionar debug no fluxo de aceitação
+window.aceitarMaterial = async function(materialId) {
+    console.log('[DEBUG] aceitarMaterial chamado para materialId:', materialId);
+    const user = window.GreenTechAPI.getCurrentUser();
+    console.log('[DEBUG] Usuário atual em aceitarMaterial:', user);
+    if (!user || user.perfil !== 'catador') return;
+    try {
+        const apiUrl = window.GreenTechAPI.baseURL + `/materials/${materialId}/reservar`;
+        console.log('[DEBUG] Fazendo requisição PUT para:', apiUrl);
+        const response = await fetch(apiUrl, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${window.GreenTechAPI.token}`
+            }
+        });
+        console.log('[DEBUG] Resposta da requisição:', response);
+        if (!response.ok) {
+            let data = {};
+            try { data = await response.json(); } catch(e){}
+            console.log('[DEBUG] Erro ao aceitar material:', data);
+            return;
+        }
+        // Buscar dados do material aceito para pegar lat/lng
+        let material = null;
+        try {
+            const resMat = await fetch(window.GreenTechAPI.baseURL + `/materials/${materialId}`);
+            const dataMat = await resMat.json();
+            material = dataMat.material || null;
+        } catch (e) { material = null; }
+        // Traçar rota se possível
+        if (!material || !material.latitude || !material.longitude) {
+            alert('O material não possui localização cadastrada. Não é possível traçar rota.');
+            return;
+        }
+        if (!navigator.geolocation) {
+            alert('Seu navegador não suporta geolocalização.');
+            return;
+        }
+        // Garante que o mapa da home está visível
+        if (document.getElementById('map')) {
+            navigator.geolocation.getCurrentPosition(function(pos) {
+                if (!pos || !pos.coords || isNaN(pos.coords.latitude) || isNaN(pos.coords.longitude)) {
+                    alert('Não foi possível obter sua localização atual.');
+                    return;
+                }
+                // Chama a função de traçar rota no mapa da home
+                mostrarRotaNoMapa(
+                    { lat: pos.coords.latitude, lng: pos.coords.longitude },
+                    { lat: Number(material.latitude), lng: Number(material.longitude) }
+                );
+            }, function(err) {
+                alert('Erro ao obter sua localização: ' + (err && err.message ? err.message : 'Desconhecido'));
+            });
+        }
+        // Atualiza a busca na página link3.html com delay
+        const searchInput = document.getElementById('search-input');
+        const filterBtn = document.querySelector('.filter-btn.active');
+        const query = searchInput ? searchInput.value : '';
+        const filter = filterBtn ? filterBtn.dataset.filter : 'all';
+        setTimeout(() => {
+            console.log('[DEBUG] Chamando performSearch após aceitar:', query, filter);
+            if (window.GreenTechApp && window.GreenTechApp.performSearch) {
+                window.GreenTechApp.performSearch(query, filter);
+            }
+        }, 700);
+    } catch (e) {
+        console.error('[DEBUG] Erro inesperado em aceitarMaterial:', e);
+    }
+}
+
+window.coletarMaterial = async function(materialId) {
+    const user = window.GreenTechAPI.getCurrentUser();
+    if (!user || user.perfil !== 'catador') {
+        return;
+    }
+    try {
+        const apiUrl = window.GreenTechAPI.baseURL + `/materials/${materialId}/coletar`;
+        const response = await fetch(apiUrl, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${window.GreenTechAPI.token}`
+            }
+        });
+        if (!response.ok) {
+            return;
+        }
+        // Após coletar, limpar rota e resetar flag
+        window._greentech_ultimaRotaOrigem = null;
+        window._greentech_ultimaRotaDestino = null;
+        window._greentech_rotaAtiva = false;
+        if (window.routingControl && window._greentech_map && window._greentech_map.hasLayer(window.routingControl)) {
+            window._greentech_map.removeControl(window.routingControl);
+        }
+        // Após coletar, atualizar a busca na página link3.html com delay
+        const searchInput = document.getElementById('search-input');
+        const filterBtn = document.querySelector('.filter-btn.active');
+        const query = searchInput ? searchInput.value : '';
+        const filter = filterBtn ? filterBtn.dataset.filter : 'all';
+        setTimeout(async () => {
+            if (window.GreenTechApp && window.GreenTechApp.performSearch) {
+                window.GreenTechApp.performSearch(query, filter);
+            }
+            // Atualizar painel de coleta do dia
+            if (window.GreenTechApp && window.GreenTechApp.loadMaterials && window.GreenTechApp.updateStats) {
+                await window.GreenTechApp.loadMaterials();
+                window.GreenTechApp.updateStats();
+            }
+        }, 700);
+    } catch (e) {
+        // erro silencioso
+    }
+} 
+
+// Remover listeners diretos dos botões de filtro (substituir por delegação global)
+// (Remover o bloco que começa com document.addEventListener('DOMContentLoaded', function() { ... para .filter-btn)
+
+// Delegação global para filtros
+
+document.addEventListener('click', function(e) {
+    if (e.target.classList && e.target.classList.contains('filter-btn')) {
+        // Remove classe active de todos
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        // Adiciona classe active ao clicado
+        e.target.classList.add('active');
+        // Pega o filtro e a busca
+        const filter = e.target.dataset.filter;
+        const query = document.getElementById('search-input')?.value || '';
+        // Chama a busca
+        if (window.GreenTechApp && window.GreenTechApp.performSearch) {
+            window.GreenTechApp.performSearch(query, filter);
+        }
+    }
+}); 
+
+// Função para forçar atualização manual
+window.forceUpdateStats = async function() {
+  if (window.GreenTechApp && window.GreenTechApp.loadMaterials && window.GreenTechApp.updateStats) {
+    await window.GreenTechApp.loadMaterials();
+    window.GreenTechApp.updateStats();
+    alert('Dados atualizados!');
+  }
+}; 
+
+// --- INÍCIO: Exibição de blocos exclusivos para catador na página de dados (link4) ---
+function getUserPerfilDireto() {
+  try {
+    const userStr = localStorage.getItem('greentech_user');
+    console.log('[DEBUG] localStorage.getItem:', userStr);
+    if (!userStr) return null;
+    const user = JSON.parse(userStr);
+    console.log('[DEBUG] user parseado:', user);
+    return user && user.perfil ? user.perfil : null;
+  } catch (e) { console.log('[DEBUG] Erro ao parsear user:', e); return null; }
+}
+function mostrarBlocosSeCatadorTentativas(tentativas = 0) {
+  var perfil = getUserPerfilDireto();
+  console.log('[DEBUG] mostrarBlocosSeCatadorTentativas tentativa', tentativas, '| perfil:', perfil);
+  
+  // Se não é catador, não tenta mostrar os blocos
+  if (perfil !== 'catador') {
+    console.log('[DEBUG] Não é catador, não mostrar blocos especiais');
+    return;
+  }
+  
+  var totalDiv = document.getElementById('catador-total');
+  var histBtn = document.getElementById('catador-historico-btn');
+  console.log('[DEBUG] totalDiv:', totalDiv, '| histBtn:', histBtn);
+  
+  if (totalDiv && histBtn) {
+    totalDiv.style.display = ''; 
+    console.log('[DEBUG] Exibindo totalDiv');
+    histBtn.style.display = ''; 
+    console.log('[DEBUG] Exibindo histBtn');
+  } else if (tentativas < 5) {
+    setTimeout(function() { mostrarBlocosSeCatadorTentativas(tentativas + 1); }, 200);
+  } else {
+    console.log('[DEBUG] Elementos não encontrados após 5 tentativas');
+  }
+}
+document.addEventListener('DOMContentLoaded', function() {
+  console.log('[DEBUG] DOMContentLoaded disparado (app.js)');
+  setTimeout(function() {
+    // Só chama mostrarBlocosSeCatadorTentativas se estiver na página de dados
+    if (window.location.pathname === '/link4/' || window.location.pathname === '/link4') {
+      mostrarBlocosSeCatadorTentativas();
+    }
+    var perfil = getUserPerfilDireto();
+    console.log('[DEBUG] perfil no DOMContentLoaded (app.js):', perfil);
+    if (perfil === 'catador') {
+      const userStr = localStorage.getItem('greentech_user');
+      const user = userStr ? JSON.parse(userStr) : null;
+      if (user && user.id) {
+        fetch(`${BASE_URL}/materials?catador_id=${user.id}&hoje=1`)
+          .then(res => res.json())
+          .then(data => {
+            let total = 0;
+            (data.materials || []).forEach(m => {
+              if (m.peso) total += parseFloat(m.peso);
+            });
+            var kgHoje = document.getElementById('catador-kg-hoje');
+            if (kgHoje) {
+              kgHoje.textContent = total.toFixed(1);
+              console.log('[DEBUG] Atualizou kgHoje:', total);
+            } else {
+              console.log('[DEBUG] Elemento catador-kg-hoje não encontrado');
+            }
+          });
+      }
+    }
+  }, 300);
+});
+document.addEventListener('page:init', function(e) {
+  console.log('[DEBUG] page:init disparado (app.js)', e);
+  if (e.target && e.target.getAttribute('data-name') === 'link4') {
+    setTimeout(mostrarBlocosSeCatadorTentativas, 100);
+  }
+});
+document.addEventListener('page:afterin', function(e) {
+  console.log('[DEBUG] page:afterin disparado (app.js)', e);
+  if (e.target && e.target.getAttribute('data-name') === 'link4') {
+    setTimeout(mostrarBlocosSeCatadorTentativas, 100);
+  }
+});
+// --- FIM: Exibição de blocos exclusivos para catador na página de dados (link4) ---
+
+// Event listener específico para o botão de histórico
 document.addEventListener('click', function(e) {
     if (e.target && e.target.id === 'catador-historico-btn') {
         e.preventDefault();
         e.stopPropagation();
-        console.log('[DEBUG] Clique no botão de histórico do catador');
+        
         // Navegar para a página de histórico
         if (typeof app !== 'undefined' && app.views && app.views.main && app.views.main.router) {
             app.views.main.router.navigate('/historico/');
@@ -1697,111 +1858,212 @@ document.addEventListener('click', function(e) {
         }
         return false;
     }
-});
+}); 
 
-// Função utilitária para obter perfil do usuário direto do localStorage
-function getUserPerfilDireto() {
-  try {
-    const userStr = localStorage.getItem('greentech_user');
-    if (!userStr) return null;
-    const user = JSON.parse(userStr);
-    return user && user.perfil ? user.perfil : null;
-  } catch (e) { return null; }
-}
+// Delegação global para o botão de localização
 
-// Função para exibir blocos exclusivos do catador na página de dados
-function mostrarBlocosSeCatadorTentativas(tentativas = 0) {
-  var perfil = getUserPerfilDireto();
-  console.log('[DEBUG] mostrarBlocosSeCatadorTentativas tentativa', tentativas, '| perfil:', perfil);
-  if (perfil !== 'catador') {
-    console.log('[DEBUG] Não é catador, não mostrar blocos especiais');
-    return;
-  }
-  var totalDiv = document.getElementById('catador-total');
-  var histBtn = document.getElementById('catador-historico-btn');
-  if (totalDiv && histBtn) {
-    totalDiv.style.display = '';
-    histBtn.style.display = '';
-    console.log('[DEBUG] Exibindo blocos exclusivos do catador');
-  } else if (tentativas < 5) {
-    setTimeout(function() { mostrarBlocosSeCatadorTentativas(tentativas + 1); }, 200);
-  } else {
-    console.log('[DEBUG] Elementos não encontrados após 5 tentativas');
-  }
-}
-
-// Chamar função ao carregar página de dados (link4)
-document.addEventListener('page:init', function(e) {
-  if (e.target && e.target.getAttribute('data-name') === 'link4') {
-    setTimeout(mostrarBlocosSeCatadorTentativas, 100);
-  }
-});
-
-// Inicializa o mapa ao carregar a página (primeiro load)
-document.addEventListener('DOMContentLoaded', function() {
-    const page = document.querySelector('.page[data-name="index"]');
-    if (page && document.getElementById('map')) {
-        setTimeout(() => {
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(function(position) {
-                    window._greentech_userLat = position.coords.latitude;
-                    window._greentech_userLng = position.coords.longitude;
-                    window.initGreenTechMap(window._greentech_userLat, window._greentech_userLng);
-                    console.log('[DEBUG] Mapa inicializado na home (DOMContentLoaded)');
-                }, function(error) {
-                    window._greentech_userLat = -25.4284;
-                    window._greentech_userLng = -49.2733;
-                    window.initGreenTechMap(window._greentech_userLat, window._greentech_userLng);
-                    console.log('[DEBUG] Mapa inicializado na home (fallback Curitiba)');
-                });
-            } else {
-                window._greentech_userLat = -25.4284;
-                window._greentech_userLng = -49.2733;
-                window.initGreenTechMap(window._greentech_userLat, window._greentech_userLng);
-                console.log('[DEBUG] Mapa inicializado na home (no geolocation)');
+document.addEventListener('click', function(e) {
+    if (e.target && e.target.id === 'btn-get-location') {
+        const latInput = document.getElementById('latitude');
+        const lngInput = document.getElementById('longitude');
+        const status = document.getElementById('location-status');
+        if (!navigator.geolocation) {
+            if (status) {
+                status.textContent = 'Geolocalização não suportada neste navegador.';
+                status.style.color = '#e53935';
             }
-        }, 200);
+            return;
+        }
+        if (status) {
+            status.textContent = 'Obtendo localização...';
+            status.style.color = '#388e3c';
+        }
+        navigator.geolocation.getCurrentPosition(function(pos) {
+            latInput.value = pos.coords.latitude;
+            lngInput.value = pos.coords.longitude;
+            if (status) {
+                status.textContent = 'Localização preenchida com sucesso!';
+                status.style.color = '#388e3c';
+            }
+            console.log('[APP.JS LOCALIZAÇÃO] Latitude preenchida:', latInput.value);
+            console.log('[APP.JS LOCALIZAÇÃO] Longitude preenchida:', lngInput.value);
+        }, function(err) {
+            if (status) {
+                status.textContent = 'Não foi possível obter localização: ' + err.message;
+                status.style.color = '#e53935';
+            }
+            latInput.value = '';
+            lngInput.value = '';
+            console.log('[APP.JS LOCALIZAÇÃO] Erro ao obter localização:', err.message);
+        });
     }
 });
-// Inicializa o mapa ao voltar para a home (SPA)
-document.addEventListener('page:init', function(e) {
+
+// --- INÍCIO: Função para traçar rota no mapa usando Leaflet Routing Machine ---
+let routingControl = null;
+function mostrarRotaNoMapa(origem, destino) {
+    // ... (código da função permanece igual)
+    if (origem && destino) {
+        origem.lat = Number(origem.lat);
+        origem.lng = Number(origem.lng);
+        destino.lat = Number(destino.lat);
+        destino.lng = Number(destino.lng);
+    }
+    if (!window._greentech_map) {
+        console.error('[ROTA] Mapa não está inicializado!');
+        alert('Mapa não carregado!');
+        return;
+    }
+    if (!origem || !destino) {
+        console.error('[ROTA] Origem ou destino não definidos:', origem, destino);
+        alert('Não foi possível obter a localização de origem ou destino.');
+        return;
+    }
+    if (
+        typeof origem.lat !== 'number' || typeof origem.lng !== 'number' ||
+        typeof destino.lat !== 'number' || typeof destino.lng !== 'number' ||
+        isNaN(origem.lat) || isNaN(origem.lng) || isNaN(destino.lat) || isNaN(destino.lng)
+    ) {
+        console.error('[ROTA] Coordenadas inválidas:', origem, destino);
+        alert('Coordenadas inválidas para traçar a rota.');
+        return;
+    }
+    console.log('[ROTA] Parâmetros recebidos para rota:', origem, destino);
+    if (routingControl && window._greentech_map) {
+        window._greentech_map.removeControl(routingControl);
+    }
+    try {
+        routingControl = L.Routing.control({
+            waypoints: [
+                L.latLng(origem.lat, origem.lng),
+                L.latLng(destino.lat, destino.lng)
+            ],
+            routeWhileDragging: false,
+            draggableWaypoints: false,
+            addWaypoints: false,
+            show: false,
+            createMarker: function() { return null; }
+        }).addTo(window._greentech_map);
+        console.log('[ROTA] Rota traçada no mapa:', origem, destino);
+    } catch (err) {
+        console.error('[ROTA] Erro ao traçar rota:', err);
+        alert('Erro ao traçar rota no mapa. Verifique sua conexão ou tente novamente.');
+    }
+}
+window.mostrarRotaNoMapa = mostrarRotaNoMapa;
+// --- FIM: Função para traçar rota no mapa ---
+
+// ... existing code ...
+window.mostrarRotaNoMapa = function(origem, destino) {
+    window._greentech_rotaAtiva = true; // Flag rota ativa
+    // Salva última rota
+    window._greentech_ultimaRotaOrigem = origem;
+    window._greentech_ultimaRotaDestino = destino;
+    if (!window._greentech_map || !document.getElementById('map')) {
+        alert('O mapa não está disponível na tela. Volte para a home para ver a rota.');
+        return;
+    }
+    if (origem && destino) {
+        origem.lat = Number(origem.lat);
+        origem.lng = Number(origem.lng);
+        destino.lat = Number(destino.lat);
+        destino.lng = Number(destino.lng);
+    }
+    if (!origem || !destino) {
+        alert('Não foi possível obter a localização de origem ou destino.');
+        return;
+    }
+    if (
+        typeof origem.lat !== 'number' || typeof origem.lng !== 'number' ||
+        typeof destino.lat !== 'number' || typeof destino.lng !== 'number' ||
+        isNaN(origem.lat) || isNaN(origem.lng) || isNaN(destino.lat) || isNaN(destino.lng)
+    ) {
+        alert('Coordenadas inválidas para traçar a rota.');
+        return;
+    }
+    if (window.routingControl && window._greentech_map && window._greentech_map.hasLayer(window.routingControl)) {
+        window._greentech_map.removeControl(window.routingControl);
+        window._greentech_rotaAtiva = false;
+    }
+    // Remove marcadores manuais de debug se existirem
+    if (window._greentech_map) {
+        if (window._greentech_debugMarkerOrigem) window._greentech_map.removeLayer(window._greentech_debugMarkerOrigem);
+        if (window._greentech_debugMarkerDestino) window._greentech_map.removeLayer(window._greentech_debugMarkerDestino);
+        window._greentech_debugMarkerOrigem = null;
+        window._greentech_debugMarkerDestino = null;
+    }
+    try {
+        window.routingControl = L.Routing.control({
+            waypoints: [
+                L.latLng(origem.lat, origem.lng),
+                L.latLng(destino.lat, destino.lng)
+            ],
+            routeWhileDragging: false,
+            draggableWaypoints: false,
+            addWaypoints: false,
+            show: false
+        }).addTo(window._greentech_map);
+        window.routingControl.on('routesfound', function(e) {});
+        window._greentech_map.fitBounds([
+            [origem.lat, origem.lng],
+            [destino.lat, destino.lng]
+        ], {padding: [40, 40]});
+    } catch (err) {
+        alert('Erro ao traçar rota no mapa. Verifique sua conexão ou tente novamente.');
+    }
+};
+// ... existing code ...
+// Remover logs de debug de proteção do mapa
+const _oldInitGreenTechMap = window.initGreenTechMap;
+window.initGreenTechMap = function(userLat, userLng) {
+    if (window._greentech_rotaAtiva) {
+        return;
+    }
+    _oldInitGreenTechMap(userLat, userLng);
+};
+// ... existing code ...
+document.addEventListener('page:beforeout', function(e) {
     const page = e.target;
     const pageName = page && page.getAttribute('data-name');
     if (pageName === 'index') {
-        setTimeout(() => {
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(function(position) {
-                    window._greentech_userLat = position.coords.latitude;
-                    window._greentech_userLng = position.coords.longitude;
-                    window.initGreenTechMap(window._greentech_userLat, window._greentech_userLng);
-                    console.log('[DEBUG] Mapa inicializado na home (page:init)');
-                }, function(error) {
-                    window._greentech_userLat = -25.4284;
-                    window._greentech_userLng = -49.2733;
-                    window.initGreenTechMap(window._greentech_userLat, window._greentech_userLng);
-                    console.log('[DEBUG] Mapa inicializado na home (fallback Curitiba)');
-                });
-            } else {
-                window._greentech_userLat = -25.4284;
-                window._greentech_userLng = -49.2733;
-                window.initGreenTechMap(window._greentech_userLat, window._greentech_userLng);
-                console.log('[DEBUG] Mapa inicializado na home (no geolocation)');
-            }
-        }, 200);
+        window._greentech_rotaAtiva = false;
     }
 });
-
 document.addEventListener('page:beforeremove', function(e) {
     const page = e.target;
     const pageName = page && page.getAttribute('data-name');
     if (pageName === 'index') {
-        if (window._greentech_map) {
-            window._greentech_map.remove();
-            window._greentech_map = null;
-        }
-        if (window.routingControl) {
-            window.routingControl.remove();
-            window.routingControl = null;
+        window._greentech_rotaAtiva = false;
+    }
+});
+// ... existing code ...
+
+document.addEventListener('page:init', function (e) {
+    const page = e.target;
+    const pageName = page && page.getAttribute('data-name');
+    if (pageName === 'index') {
+        // Se houver última rota salva, redesenha
+        if (window._greentech_ultimaRotaOrigem && window._greentech_ultimaRotaDestino) {
+            setTimeout(function() {
+                if (window._greentech_map) {
+                    window.mostrarRotaNoMapa(window._greentech_ultimaRotaOrigem, window._greentech_ultimaRotaDestino);
+                }
+            }, 600);
         }
     }
 });
+document.addEventListener('page:afterin', function (e) {
+    const page = e.target;
+    const pageName = page && page.getAttribute('data-name');
+    if (pageName === 'index') {
+        // Se houver última rota salva, redesenha
+        if (window._greentech_ultimaRotaOrigem && window._greentech_ultimaRotaDestino) {
+            setTimeout(function() {
+                if (window._greentech_map) {
+                    window.mostrarRotaNoMapa(window._greentech_ultimaRotaOrigem, window._greentech_ultimaRotaDestino);
+                }
+            }, 600);
+        }
+    }
+});
+// ... existing code ...
